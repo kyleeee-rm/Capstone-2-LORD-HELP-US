@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: examina
+      POSTGRES_PASSWORD: examina_dev_password
+      POSTGRES_DB: examina
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U examina"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:0.5.5
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+  backend:
+    build: ./examina-backend
+    volumes:
+      - ./examina-backend/app:/app/app
+    environment:
+      DATABASE_URL: postgresql://examina:examina_dev_password@db:5432/examina
+      CHROMA_URL: http://chromadb:8000
+    depends_on:
+      db:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./examina-frontend
+    volumes:
+      - ./examina-frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pg_data:
+  chroma_data:
