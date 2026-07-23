@@ -1,14 +1,8 @@
+@import "tailwindcss";
 @import "./tokens.css";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
-  margin: 0;
-  font-family: var(--font-family);
+  font-family: system-ui, -apple-system, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
