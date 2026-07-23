@@ -1,15 +1,12 @@
-// src/layouts/DashboardLayout.tsx
-import { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 
-interface Props {
-  children: ReactNode;
-}
-
-export default function DashboardLayout({ children }: Props) {
+export default function DashboardLayout() {
   return (
-    <div>
-      <nav>Navbar</nav>
-      <main>{children}</main>
+    <div style={{ display: "flex" }}>
+      <aside style={{ width: "200px" }}>Sidebar</aside>
+      <main style={{ padding: "20px" }}>
+        <Outlet />
+      </main>
     </div>
   );
 }

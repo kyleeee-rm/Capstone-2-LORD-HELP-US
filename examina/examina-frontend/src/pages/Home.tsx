@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { checkHealth } from "../api/health";
-import { HealthResponse } from "../types/api";
+import type { HealthResponse } from "../types/api";
 
 export default function Home() {
   const [data, setData] = useState<HealthResponse | null>(null);
