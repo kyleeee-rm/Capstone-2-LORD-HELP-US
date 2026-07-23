@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.user import User
+from app.models.faculty import Faculty  # CHANGED: was app.models.user import User
 
 
 def get_current_user(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
-) -> User:
+) -> Faculty:  # CHANGED: return type was User
     if not authorization or not authorization.startswith("Bearer "):
         raise AppError(401, "unauthorized", "Missing or malformed Authorization header.")
 
@@ -24,8 +24,10 @@ def get_current_user(
     except jwt.InvalidTokenError:
         raise AppError(401, "unauthorized", "Invalid access token.")
 
-    user = db.get(User, payload["sub"])
-    if user is None:
+    # CHANGED: db.get(Faculty, ...) - was db.get(User, ...). Works the same
+    # way regardless of PK column name; db.get() looks up by primary key.
+    faculty = db.get(Faculty, payload["sub"])
+    if faculty is None:
         raise AppError(401, "unauthorized", "User no longer exists.")
 
-    return user
+    return faculty

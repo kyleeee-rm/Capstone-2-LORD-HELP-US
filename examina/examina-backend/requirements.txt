@@ -6,3 +6,4 @@ alembic
 pydantic-settings
 pyjwt
 argon2-cffi
+email-validator

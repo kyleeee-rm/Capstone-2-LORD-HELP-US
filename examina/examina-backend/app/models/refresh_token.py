@@ -12,8 +12,9 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    # CHANGED: renamed from user_id -> faculty_id, FK target users.id -> faculty.faculty_id
+    faculty_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("faculty.faculty_id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # SHA-256 of the raw token. The raw token only ever exists in the HttpOnly
@@ -31,4 +32,5 @@ class RefreshToken(Base):
     # signal — see routers/auth.py's refresh() reuse-detection branch.
     replaced_by_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
-    user: Mapped["User"] = relationship(back_populates="refresh_tokens")
+    # CHANGED: renamed from `user` -> `faculty`
+    faculty: Mapped["Faculty"] = relationship(back_populates="refresh_tokens")

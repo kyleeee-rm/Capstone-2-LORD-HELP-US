@@ -17,8 +17,8 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.deps import get_current_user
+from app.models.faculty import Faculty  # CHANGED: was app.models.user import User
 from app.models.refresh_token import RefreshToken
-from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -44,15 +44,17 @@ def _set_refresh_cookie(response: Response, raw_token: str) -> None:
     )
 
 
-def _issue_refresh_token(db: Session, user_id, response: Response) -> RefreshToken:
+def _issue_refresh_token(db: Session, faculty_id, response: Response) -> RefreshToken:
+    # CHANGED: param renamed user_id -> faculty_id; RefreshToken.faculty_id
+    # instead of RefreshToken.user_id
     raw = generate_raw_refresh_token()
     row = RefreshToken(
-        user_id=user_id,
+        faculty_id=faculty_id,
         token_hash=hash_refresh_token(raw),
         expires_at=refresh_token_expiry(),
     )
     db.add(row)
-    db.flush()  # populate row.id without committing yet — caller commits
+    db.flush()  # populate row.id without committing yet - caller commits
     _set_refresh_cookie(response, raw)
     return row
 
@@ -62,40 +64,58 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if len(payload.password) < 8:
         raise AppError(400, "weak_password", "Password must be at least 8 characters.")
 
-    existing = db.scalar(select(User).where(User.username == payload.username))
+    # CHANGED: lookup by email, was username. Error code email_taken, was
+    # username_taken - update API_CONTRACT-1.md to match.
+    existing = db.scalar(select(Faculty).where(Faculty.email == payload.email))
     if existing is not None:
-        raise AppError(400, "username_taken", "That username is already registered.")
+        raise AppError(400, "email_taken", "That email is already registered.")
 
-    user = User(
-        username=payload.username,
+    # CHANGED: Faculty(...) was User(...). password_hash field name changed
+    # (was hashed_password). role/status NOT taken from payload - always
+    # server-assigned defaults (see Faculty model: role="faculty",
+    # status="active").
+    faculty = Faculty(
+        email=payload.email,
         first_name=payload.first_name,
         last_name=payload.last_name,
-        hashed_password=hash_password(payload.password),
+        password_hash=hash_password(payload.password),
     )
-    db.add(user)
+    db.add(faculty)
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(faculty)
+    return faculty
 
 
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.username == payload.username))
+    # CHANGED: lookup by email, was username.
+    faculty = db.scalar(select(Faculty).where(Faculty.email == payload.email))
 
-    if user is None or not verify_password(payload.password, user.hashed_password):
-        raise AppError(401, "invalid_credentials", "Incorrect username or password.")
+    if faculty is None or not verify_password(payload.password, faculty.password_hash):
+        raise AppError(401, "invalid_credentials", "Incorrect email or password.")
 
-    if needs_rehash(user.hashed_password):
-        user.hashed_password = hash_password(payload.password)
+    # TODO(status-check): team decided NOT to enforce `faculty.status` at
+    # login yet (column exists, defaults to "active", nothing rejects
+    # "inactive"/"suspended" today). When there's an actual reason to
+    # deactivate an account (e.g. an admin panel), add here:
+    #
+    #   if faculty.status != "active":
+    #       raise AppError(403, "account_inactive", "This account is not active.")
+    #
+    # This also needs a new error code added to API_CONTRACT-1.md when it
+    # lands - it's not documented there yet.
 
-    access_token, expires_in = create_access_token(user.id)
-    _issue_refresh_token(db, user.id, response)
+    if needs_rehash(faculty.password_hash):
+        faculty.password_hash = hash_password(payload.password)
+
+    access_token, expires_in = create_access_token(faculty.faculty_id)
+    _issue_refresh_token(db, faculty.faculty_id, response)
     db.commit()
 
     return LoginResponse(
         access_token=access_token,
         expires_in=expires_in,
-        user=UserOut.model_validate(user),
+        user=UserOut.model_validate(faculty),
     )
 
 
@@ -114,12 +134,9 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     now = datetime.now(timezone.utc)
 
     if row.revoked_at is not None:
-        # This exact token was already rotated away once. Seeing it again means
-        # someone (attacker or a stale second device) is replaying an old
-        # refresh token — treat it as compromise and kill every active session
-        # for this user, not just this one.
+        # CHANGED: filter on RefreshToken.faculty_id, was RefreshToken.user_id
         db.query(RefreshToken).filter(
-            RefreshToken.user_id == row.user_id,
+            RefreshToken.faculty_id == row.faculty_id,
             RefreshToken.revoked_at.is_(None),
         ).update({"revoked_at": now})
         db.commit()
@@ -129,19 +146,17 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     if row.expires_at < now:
         raise AppError(401, "refresh_token_expired", "Refresh token has expired.")
 
-    user = db.get(User, row.user_id)
-    if user is None:
+    # CHANGED: db.get(Faculty, row.faculty_id) - was db.get(User, row.user_id)
+    faculty = db.get(Faculty, row.faculty_id)
+    if faculty is None:
         raise AppError(401, "invalid_refresh_token", "User no longer exists.")
 
-    # Rotate: this token is now spent, a new one takes over with a fresh
-    # 30-day window — this is what gives you "30 days of inactivity" logout
-    # rather than a hard 30-day cliff from original login.
-    new_row = _issue_refresh_token(db, user.id, response)
+    new_row = _issue_refresh_token(db, faculty.faculty_id, response)
     row.revoked_at = now
     row.replaced_by_id = new_row.id
     db.commit()
 
-    access_token, expires_in = create_access_token(user.id)
+    access_token, expires_in = create_access_token(faculty.faculty_id)
     return TokenResponse(access_token=access_token, expires_in=expires_in)
 
 
@@ -150,7 +165,7 @@ def logout(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Faculty = Depends(get_current_user),  # CHANGED: type was User
 ):
     raw_token = request.cookies.get(settings.REFRESH_COOKIE_NAME)
     if raw_token:
@@ -165,5 +180,5 @@ def logout(
 
 
 @router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: Faculty = Depends(get_current_user)):  # CHANGED: type was User
     return current_user
