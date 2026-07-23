@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore, DEV_EMAIL, DEV_PASSWORD } from "../../store/authStore";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
@@ -9,6 +11,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const login = useAuthStore((s) => s.login);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -16,11 +20,17 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/health");
-      if (res.ok) {
-        window.location.href = "/";
+      if (import.meta.env.DEV && email === DEV_EMAIL && password === DEV_PASSWORD) {
+        login(email);
+        navigate("/dashboard");
       } else {
-        setError("Invalid email or password");
+        const res = await fetch("/api/health");
+        if (res.ok) {
+          login(email);
+          navigate("/dashboard");
+        } else {
+          setError("Invalid email or password");
+        }
       }
     } catch {
       setError("Cannot connect to server");
@@ -79,6 +89,12 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+
+        {import.meta.env.DEV && (
+          <p className="mt-4 text-center text-xs text-text-muted">
+            Dev: dev@examina.com / examina123
+          </p>
+        )}
       </Card>
     </div>
   );
