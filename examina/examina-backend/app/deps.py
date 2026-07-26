@@ -1,5 +1,6 @@
 import jwt
-from fastapi import Depends, Header
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppError
@@ -7,15 +8,24 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.faculty import Faculty  # CHANGED: was app.models.user import User
 
+# This tells FastAPI/OpenAPI that this API uses Bearer Authentication.
+# auto_error=False lets us continue using our custom AppError responses.
+security = HTTPBearer(auto_error=False)
+
 
 def get_current_user(
-    authorization: str | None = Header(default=None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> Faculty:  # CHANGED: return type was User
-    if not authorization or not authorization.startswith("Bearer "):
-        raise AppError(401, "unauthorized", "Missing or malformed Authorization header.")
 
-    token = authorization.removeprefix("Bearer ").strip()
+    if credentials is None:
+        raise AppError(
+            401,
+            "unauthorized",
+            "Missing or malformed Authorization header.",
+        )
+
+    token = credentials.credentials
 
     try:
         payload = decode_access_token(token)
