@@ -69,3 +69,8 @@ class Subject(Base):
     faculty: Mapped["Faculty"] = relationship(
         back_populates="subjects",
     )
+
+    folders: Mapped[list["SubjectFolder"]] = relationship(
+        back_populates="subject",
+        cascade="all, delete-orphan",
+    )
