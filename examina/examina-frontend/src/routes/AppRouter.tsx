@@ -23,6 +23,10 @@ import Settings from "../pages/dashboard/Settings";
 import Help from "../pages/dashboard/Help";
 import Profile from "../pages/dashboard/Profile";
 
+// Subjects
+import SubjectLibrary from "../pages/subjects/SubjectLibrary";
+import SubjectFolder from "../pages/subjects/SubjectFolder";
+
 // Guards
 import ProtectedRoute from "../components/ProtectedRoute";
 
@@ -53,6 +57,12 @@ export default function AppRouter() {
             <Route path="help" element={<Help />} />
             <Route path="profile" element={<Profile />} />
           </Route>
+        </Route>
+
+        {/* Subjects (protected) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/subjects" element={<SubjectLibrary />} />
+          <Route path="/subjects/:id" element={<SubjectFolder />} />
         </Route>
 
         {/* Fallback */}
