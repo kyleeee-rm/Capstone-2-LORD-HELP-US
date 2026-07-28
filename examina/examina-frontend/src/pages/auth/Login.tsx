@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore, DEV_EMAIL, DEV_PASSWORD } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
+import { authService } from "../../services/authService";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
@@ -11,7 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((s) => s.login);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -20,20 +21,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (import.meta.env.DEV && email === DEV_EMAIL && password === DEV_PASSWORD) {
-        login(email);
-        navigate("/dashboard");
+      const data = await authService.login({ email, password });
+      setAuth(data.user, data.access_token);
+      navigate("/dashboard");
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setError(axiosErr.response?.data?.detail || "Invalid email or password");
       } else {
-        const res = await fetch("/api/health");
-        if (res.ok) {
-          login(email);
-          navigate("/dashboard");
-        } else {
-          setError("Invalid email or password");
-        }
+        setError("Cannot connect to server");
       }
-    } catch {
-      setError("Cannot connect to server");
     } finally {
       setLoading(false);
     }
@@ -89,12 +86,6 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
-
-        {import.meta.env.DEV && (
-          <p className="mt-4 text-center text-xs text-text-muted">
-            Dev: dev@examina.com / examina123
-          </p>
-        )}
       </Card>
     </div>
   );

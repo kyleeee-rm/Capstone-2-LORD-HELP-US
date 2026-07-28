@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../../services/authService";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
@@ -11,6 +12,7 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  general?: string;
 }
 
 export default function Register() {
@@ -42,8 +44,8 @@ export default function Register() {
 
     if (!password) {
       newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     if (!confirmPassword) {
@@ -63,11 +65,20 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // TODO: Implement actual registration API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await authService.register({
+        email,
+        password,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
       navigate("/login");
-    } catch {
-      setErrors({ email: "Registration failed. Please try again." });
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setErrors({ general: axiosErr.response?.data?.detail || "Registration failed. Please try again." });
+      } else {
+        setErrors({ general: "Cannot connect to server" });
+      }
     } finally {
       setLoading(false);
     }
@@ -87,6 +98,12 @@ export default function Register() {
             Register as a faculty member
           </p>
         </div>
+
+        {errors.general && (
+          <div className="mb-4 rounded-lg border border-error-border bg-error-bg px-3.5 py-2.5 text-sm text-error max-[360px]:text-xs">
+            {errors.general}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4.5">
           <div className="grid grid-cols-2 gap-3">

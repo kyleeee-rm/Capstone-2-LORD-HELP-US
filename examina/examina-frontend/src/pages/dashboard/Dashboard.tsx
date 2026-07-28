@@ -31,7 +31,7 @@ const modules = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const name = user?.split("@")[0] ?? "User";
+  const name = user?.first_name ?? "User";
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
 
   return (
