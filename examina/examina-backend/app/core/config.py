@@ -27,5 +27,8 @@ class Settings(BaseSettings):
     # session — never commit COOKIE_SECURE=false.
     COOKIE_SECURE: bool = True
 
+    STORAGE_ROOT: str = "/app/storage"
+    MAX_UPLOAD_SIZE_MB: int = 25
+
 
 settings = Settings()

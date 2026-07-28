@@ -28,6 +28,7 @@ services:
       - ./examina-backend/app:/app/app
       - ./examina-backend/alembic:/app/alembic
       - ./examina-backend/alembic.ini:/app/alembic.ini
+      - materials_data:/app/storage
     env_file:
       - ./examina-backend/.env
     environment:
@@ -65,3 +66,4 @@ volumes:
   pg_data:
   chroma_data:
   frontend_node_modules:
+  materials_data:
