@@ -1,30 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
+import examinaLogo from "../../assets/examina-logo.png";
 
-type Props = {
-  onMenuClick: () => void;
-};
-
-export default function Navbar({ onMenuClick }: Props) {
-  const logout = useAuthStore((s) => s.logout);
+export default function Navbar() {
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   return (
     <nav className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:px-6">
-      <button
-        onClick={onMenuClick}
-        className="cursor-pointer rounded-lg border-none bg-transparent p-1.5 text-text transition-colors hover:bg-muted-bg md:hidden"
-        aria-label="Open menu"
-      >
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      <div className="flex items-center gap-2">
+        <img src={examinaLogo} alt="Examina" className="h-8" />
+      </div>
 
       <div className="flex items-center gap-2">
         <button
@@ -44,12 +28,6 @@ export default function Navbar({ onMenuClick }: Props) {
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-        </button>
-        <button
-          onClick={handleLogout}
-          className="cursor-pointer rounded-lg border-none bg-transparent px-3 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-muted-bg hover:text-text max-[480px]:hidden"
-        >
-          Logout
         </button>
       </div>
     </nav>

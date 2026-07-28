@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { uploadMaterial, getMaterials, type MaterialListItem } from "../../services/materialService";
+import { useActivityStore } from "../../store/activityStore";
 
 export default function UploadTab({ folderId }: { folderId: string }) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -8,6 +9,8 @@ export default function UploadTab({ folderId }: { folderId: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [materials, setMaterials] = useState<MaterialListItem[]>([]);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
+  const addActivity = useActivityStore((s) => s.addActivity);
 
   const fetchMaterials = () => getMaterials(folderId).then(setMaterials).catch(() => setMaterials([]));
 
@@ -51,6 +54,9 @@ export default function UploadTab({ folderId }: { folderId: string }) {
         );
       }
       setSuccess(`${pendingFiles.length} file(s) uploaded successfully`);
+      pendingFiles.forEach((file) => {
+        addActivity({ action: "uploaded", type: "file", name: file.name });
+      });
       setPendingFiles([]);
       fetchMaterials();
     } catch (err) {
@@ -76,7 +82,7 @@ export default function UploadTab({ folderId }: { folderId: string }) {
 
       {pendingFiles.length > 0 && (
         <div className="mt-3">
-          <h4 className="mb-1 text-sm font-medium text-text">
+          <h4 className="mb-2 text-sm font-semibold text-text">
             Queue ({pendingFiles.length} file{pendingFiles.length > 1 ? "s" : ""})
           </h4>
           <ul className="divide-y divide-border rounded-xl border border-border">
@@ -87,7 +93,7 @@ export default function UploadTab({ folderId }: { folderId: string }) {
                   <span className="whitespace-nowrap text-xs font-medium text-primary">{progress}%</span>
                 ) : (
                   <button
-                    onClick={() => removePendingFile(i)}
+                    onClick={() => setPendingDeleteIndex(i)}
                     className="whitespace-nowrap text-xs text-red-500 hover:text-red-700"
                   >
                     Remove
@@ -100,7 +106,7 @@ export default function UploadTab({ folderId }: { folderId: string }) {
           <button
             onClick={handleUploadAll}
             disabled={uploadingIndex !== null}
-            className="mt-3 w-full rounded-full bg-primary py-3 text-sm font-medium text-white disabled:opacity-50"
+            className="mt-3 w-full rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {uploadingIndex !== null
               ? `Uploading ${uploadingIndex + 1} of ${pendingFiles.length}...`
@@ -108,7 +114,7 @@ export default function UploadTab({ folderId }: { folderId: string }) {
           </button>
 
           {uploadingIndex !== null && (
-            <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+            <div className="mt-2 h-2 w-full rounded-full bg-border">
               <div
                 className="h-2 rounded-full bg-primary transition-all"
                 style={{ width: `${progress}%` }}
@@ -121,9 +127,37 @@ export default function UploadTab({ folderId }: { folderId: string }) {
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       {success && <p className="mt-2 text-sm text-green-600">{success}</p>}
 
+      {pendingDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-text">Remove File</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Are you sure you want to remove "{pendingFiles[pendingDeleteIndex]?.name}" from the queue?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setPendingDeleteIndex(null)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removePendingFile(pendingDeleteIndex);
+                  setPendingDeleteIndex(null);
+                }}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {materials.length > 0 && (
         <div className="mt-4">
-          <h4 className="mb-2 text-sm font-medium text-text">Uploaded Files</h4>
+          <h4 className="mb-2 text-sm font-semibold text-text">Uploaded Files</h4>
           <ul className="divide-y divide-border rounded-xl border border-border">
             {materials.map((m) => (
               <li key={m.id} className="flex items-center justify-between px-4 py-3 text-sm text-text">

@@ -16,8 +16,8 @@ import Privacy from "../pages/legal/Privacy";
 // Dashboard
 import DashboardLayout from "../layouts/DashboardLayout";
 import Dashboard from "../pages/dashboard/Dashboard";
-import QuestionGenerator from "../pages/dashboard/QuestionGenerator";
-import MaterialSources from "../pages/dashboard/MaterialSources";
+import QuestionsGeneration from "../pages/dashboard/QuestionsGeneration";
+import SheetScanning from "../pages/dashboard/SheetScanning";
 import ItemAnalysis from "../pages/dashboard/ItemAnalysis";
 import Search from "../pages/dashboard/Search";
 import Notifications from "../pages/dashboard/Notifications";
@@ -25,7 +25,8 @@ import Library from "../pages/dashboard/Library";
 import Reports from "../pages/dashboard/Reports";
 import Settings from "../pages/dashboard/Settings";
 import Help from "../pages/dashboard/Help";
-import Profile from "../pages/dashboard/Profile";
+import Menu from "../pages/dashboard/Menu";
+import ProfileDetail from "../pages/dashboard/ProfileDetail";
 
 // Subjects
 import SubjectLibrary from "../pages/subjects/SubjectLibrary";
@@ -54,8 +55,8 @@ export default function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
-            <Route path="questions" element={<QuestionGenerator />} />
-            <Route path="materials" element={<MaterialSources />} />
+            <Route path="questions" element={<QuestionsGeneration />} />
+            <Route path="materials" element={<SheetScanning />} />
             <Route path="analysis" element={<ItemAnalysis />} />
             <Route path="search" element={<Search />} />
             <Route path="notifications" element={<Notifications />} />
@@ -63,7 +64,8 @@ export default function AppRouter() {
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
             <Route path="help" element={<Help />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="menu" element={<Menu />} />
+            <Route path="profile" element={<ProfileDetail />} />
           </Route>
         </Route>
 

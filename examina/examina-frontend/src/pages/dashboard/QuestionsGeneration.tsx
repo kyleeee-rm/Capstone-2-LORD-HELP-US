@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EditModal from "../../components/EditModal";
 import { getSubjects, createSubject } from "../../services/subjectService";
+import { useActivityStore } from "../../store/activityStore";
 
 type View = "subjects" | "options" | "upload-lm" | "generation" | "upload-qa";
 
@@ -12,11 +13,12 @@ interface UploadedFile {
   type: string;
   teachingHours?: number;
   teachingMinutes?: number;
-  blendedDate?: string;
+  blooms?: { name: string; value: number; color: string }[];
 }
 
-export default function QuestionGenerator() {
+export default function QuestionsGeneration() {
   const navigate = useNavigate();
+  const addActivity = useActivityStore((s) => s.addActivity);
   const [subjects, setSubjects] = useState<{ subject_id: string; subject_name: string }[]>([]);
   const [view, setView] = useState<View>("subjects");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
@@ -31,12 +33,24 @@ export default function QuestionGenerator() {
   const [activeTab, setActiveTab] = useState<"sources" | "generated">("sources");
   const [qaTab, setQaTab] = useState<"sources" | "extracted">("sources");
 
+  // Selection mode for subjects
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDialog, setConfirmDialog] = useState<{
+    action: "archive" | "delete";
+    count: number;
+  } | null>(null);
+  const [deleteFileIndex, setDeleteFileIndex] = useState<number | null>(null);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
+  const [uploadedDeleteIndex, setUploadedDeleteIndex] = useState<number | null>(null);
+
   // Generation settings
   const [fileName, setFileName] = useState("");
-  const [totalItems, setTotalItems] = useState(60);
-  const [mcCount, setMcCount] = useState(24);
-  const [tfCount, setTfCount] = useState(18);
-  const [selectedTypes, setSelectedTypes] = useState({ mc: true, tf: true });
+  const [mcCount, setMcCount] = useState(36);
+  const [tfCount, setTfCount] = useState(24);
+  const [promptText, setPromptText] = useState("");
+  const totalItems = mcCount + tfCount;
+  const [tosExpanded, setTosExpanded] = useState(false);
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -49,7 +63,6 @@ export default function QuestionGenerator() {
     { name: "Evaluate", value: 10, color: "#0ea5e9" },
     { name: "Create", value: 5, color: "#3b82f6" },
   ]);
-  const [editPrompt, setEditPrompt] = useState("");
 
   const selectedSubject = subjects.find((s) => s.subject_id === selectedSubjectId);
 
@@ -87,6 +100,7 @@ export default function QuestionGenerator() {
       semester: "",
       academic_year: "",
     });
+    addActivity({ action: "created", type: "subject", name: newSubject.trim() });
     setNewSubject("");
     fetchSubjects();
   };
@@ -99,6 +113,42 @@ export default function QuestionGenerator() {
     setError("");
     setSuccess("");
     setFileName("");
+  };
+
+  // ── Selection helpers ──
+  const toggleSubjectSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllSubjects = () => {
+    if (selectedIds.size === subjects.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(subjects.map((s) => s.subject_id)));
+    }
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const executeBulkSubjectAction = () => {
+    if (!confirmDialog) return;
+    if (confirmDialog.action === "archive") {
+      // Optimistic: remove from visible list
+      setSubjects((prev) => prev.filter((s) => !selectedIds.has(s.subject_id)));
+    } else {
+      setSubjects((prev) => prev.filter((s) => !selectedIds.has(s.subject_id)));
+    }
+    setSelectedIds(new Set());
+    setConfirmDialog(null);
+    setSelectMode(false);
   };
 
   const goBack = () => {
@@ -152,11 +202,6 @@ export default function QuestionGenerator() {
           size: pendingFiles[i].size,
           type: pendingFiles[i].type,
           teachingHours: Math.floor(Math.random() * 3) + 1,
-          blendedDate: new Date().toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          }),
         });
       }
       setUploadedFiles((prev) => [...prev, ...uploaded]);
@@ -190,18 +235,16 @@ export default function QuestionGenerator() {
     hours: number;
     minutes: number;
     blooms: { name: string; value: number; color: string }[];
-    prompt: string;
   }) => {
     if (editFileIndex === null) return;
     setUploadedFiles((prev) =>
       prev.map((f, i) =>
         i === editFileIndex
-          ? { ...f, teachingHours: data.hours, teachingMinutes: data.minutes }
+          ? { ...f, teachingHours: data.hours, teachingMinutes: data.minutes, blooms: data.blooms }
           : f
       )
     );
     setEditBlooms(data.blooms);
-    setEditPrompt(data.prompt);
   };
 
   const removeUploadedFile = (index: number) => {
@@ -209,8 +252,8 @@ export default function QuestionGenerator() {
   };
 
   const handleGenerate = () => {
-    // TODO: Call generation API
-    alert(`Generating ${totalItems} questions from ${uploadedFiles.length} files...`);
+    addActivity({ action: "generated", type: "exam", name: examName || "Untitled Exam" });
+    alert(`Generating ${totalItems} questions from ${uploadedFiles.length} files...${promptText ? `\nPrompt: ${promptText}` : ""}`);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -228,13 +271,13 @@ export default function QuestionGenerator() {
   const getFileIconColor = (type: string) => {
     if (type.includes("pdf")) return "bg-red-100 text-red-600";
     if (type.includes("word") || type.includes("docx")) return "bg-blue-100 text-blue-600";
-    return "bg-gray-100 text-gray-600";
+    return "bg-muted-bg text-text-muted";
   };
 
   // ── VIEW: Subject List ──
   if (view === "subjects") {
     return (
-      <div>
+      <div className="pb-20">
         <button
           onClick={() => navigate("/dashboard")}
           className="cursor-pointer rounded-lg border-none bg-transparent p-1.5 text-text transition-colors hover:bg-muted-bg"
@@ -244,50 +287,181 @@ export default function QuestionGenerator() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="mb-4 mt-1 pl-1.5 text-2xl font-bold text-secondary">Exam Generation</h1>
+        <h1 className="mb-1 pl-1.5 text-2xl font-bold text-secondary">Exam Generation</h1>
         <p className="pl-1.5 text-sm text-text-muted">Select a subject folder to get started.</p>
 
-        <div className="mt-4 flex gap-2 pl-1.5">
-            <input
-              value={newSubject}
-              onChange={(e) => setNewSubject(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              placeholder="New subject name"
-              className="flex-1 rounded-xl border border-border bg-transparent px-4 py-3 text-base text-text outline-none placeholder:text-text-muted focus:border-secondary"
-            />
-            <button
-              onClick={handleCreate}
-              disabled={!newSubject.trim()}
-              className="rounded-full bg-secondary px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
+        <div className="mt-4 flex flex-col gap-3 pl-1.5">
+          <input
+            value={newSubject}
+            onChange={(e) => setNewSubject(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            placeholder="New subject name"
+            disabled={selectMode}
+            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none placeholder:text-text-muted focus:border-secondary disabled:opacity-50"
+          />
+          <button
+            onClick={handleCreate}
+            disabled={!newSubject.trim() || selectMode}
+            className="w-full rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
+          >
+            Add Subject
+          </button>
+        </div>
 
-          <div className="mt-4 grid gap-3">
-            {subjects.map((s) => (
+        {/* Select all + Cancel | Select row */}
+        <div className="mt-3 flex items-center justify-between pl-1.5">
+          {selectMode && subjects.length > 0 ? (
+            <>
+              <button
+                onClick={selectAllSubjects}
+                className="flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
+              >
+                <div
+                  className={`flex h-5 w-5 items-center justify-center rounded border ${
+                    selectedIds.size === subjects.length
+                      ? "border-secondary bg-secondary"
+                      : "border-border"
+                  }`}
+                >
+                  {selectedIds.size === subjects.length && (
+                    <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                {selectedIds.size === subjects.length ? "Deselect all" : "Select all"}
+              </button>
+              <button
+                onClick={exitSelectMode}
+                className="text-sm font-medium text-secondary transition-colors hover:underline"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <div className="flex w-full justify-end">
+              <button
+                onClick={() => setSelectMode(true)}
+                disabled={subjects.length === 0}
+                className="text-sm font-medium text-secondary transition-colors hover:underline disabled:opacity-50"
+              >
+                Select
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-3">
+          {subjects.map((s) => {
+            const isSelected = selectedIds.has(s.subject_id);
+            return (
               <button
                 key={s.subject_id}
-                onClick={() => selectSubject(s.subject_id)}
-                className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-secondary"
+                onClick={() =>
+                  selectMode
+                    ? toggleSubjectSelect(s.subject_id)
+                    : selectSubject(s.subject_id)
+                }
+                className={`flex items-center gap-3 rounded-xl border bg-surface p-4 text-left transition-colors ${
+                  selectMode
+                    ? isSelected
+                      ? "border-secondary bg-secondary/5"
+                      : "border-border"
+                    : "border-border hover:border-secondary"
+                }`}
               >
+                {selectMode && (
+                  <div
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                      isSelected ? "border-secondary bg-secondary" : "border-border"
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                )}
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                 </div>
                 <span className="flex-1 text-base font-medium text-text">{s.subject_name}</span>
-                <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                {!selectMode && (
+                  <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
               </button>
-            ))}
-            {subjects.length === 0 && (
-              <p className="py-12 text-center text-sm text-text-muted">
-                No subjects yet. Create one above.
-              </p>
-            )}
+            );
+          })}
+          {subjects.length === 0 && (
+            <p className="py-12 text-center text-sm text-text-muted">
+              No subjects yet. Create one above.
+            </p>
+          )}
+        </div>
+
+        {/* Bulk actions bar */}
+        {selectMode && selectedIds.size > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface px-4 py-3 shadow-lg">
+            <div className="mx-auto flex max-w-lg items-center justify-between">
+              <span className="text-sm font-medium text-text">
+                {selectedIds.size} selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDialog({ action: "archive", count: selectedIds.size })}
+                  className="rounded-full border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+                >
+                  Archive
+                </button>
+                <button
+                  onClick={() => setConfirmDialog({ action: "delete", count: selectedIds.size })}
+                  className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* Confirmation dialog */}
+        {confirmDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+              <h3 className="text-lg font-semibold text-text">
+                {confirmDialog.action === "archive" ? "Archive Subjects" : "Delete Subjects"}
+              </h3>
+              <p className="mt-2 text-sm text-text-muted">
+                {confirmDialog.action === "archive"
+                  ? `Are you sure you want to archive ${confirmDialog.count} subject${confirmDialog.count > 1 ? "s" : ""}? They will be moved to the Archived tab.`
+                  : `Are you sure you want to permanently delete ${confirmDialog.count} subject${confirmDialog.count > 1 ? "s" : ""}? This action cannot be undone.`}
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeBulkSubjectAction}
+                  className={`rounded-full px-4 py-2 text-sm font-medium text-white transition-colors ${
+                    confirmDialog.action === "delete"
+                      ? "bg-red-500 hover:bg-red-600"
+                      : "bg-secondary hover:bg-secondary/90"
+                  }`}
+                >
+                  {confirmDialog.action === "archive" ? "Archive" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -355,6 +529,7 @@ export default function QuestionGenerator() {
   // ── VIEW: Option 1 — Upload Learning Materials ──
   if (view === "upload-lm") {
     return (
+    <>
       <div className="flex flex-col">
         <button
           onClick={goBack}
@@ -377,7 +552,7 @@ export default function QuestionGenerator() {
                 : "text-text-muted hover:text-text"
             }`}
           >
-            Sources ({materials.length})
+            Sources ({uploadedFiles.length})
           </button>
           <button
             onClick={() => setActiveTab("generated")}
@@ -417,7 +592,7 @@ export default function QuestionGenerator() {
 
               {pendingFiles.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-medium text-text">
+                  <h4 className="mb-2 text-sm font-semibold text-text">
                     Queue ({pendingFiles.length} file{pendingFiles.length > 1 ? "s" : ""})
                   </h4>
                   <ul className="divide-y divide-border rounded-xl border border-border">
@@ -439,10 +614,12 @@ export default function QuestionGenerator() {
                           <span className="whitespace-nowrap text-xs font-medium text-secondary">{progress}%</span>
                         ) : (
                           <button
-                            onClick={() => removePendingFile(i)}
-                            className="whitespace-nowrap text-xs text-red-500 hover:text-red-700"
+                            onClick={() => setPendingDeleteIndex(i)}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                           >
-                            Remove
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         )}
                       </li>
@@ -452,7 +629,7 @@ export default function QuestionGenerator() {
                   <button
                     onClick={handleUploadAll}
                     disabled={uploadingIndex !== null}
-                    className="mt-3 w-full rounded-full bg-secondary py-3 text-sm font-medium text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
+                    className="mt-3 w-full rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
                   >
                     {uploadingIndex !== null
                       ? `Uploading ${uploadingIndex + 1} of ${pendingFiles.length}...`
@@ -460,7 +637,7 @@ export default function QuestionGenerator() {
                   </button>
 
                   {uploadingIndex !== null && (
-                    <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                    <div className="mt-2 h-2 w-full rounded-full bg-border">
                       <div
                         className="h-2 rounded-full bg-secondary transition-all"
                         style={{ width: `${progress}%` }}
@@ -472,7 +649,7 @@ export default function QuestionGenerator() {
 
               {uploadedFiles.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-medium text-text">Uploaded Files</h4>
+                  <h4 className="mb-2 text-sm font-semibold text-text">Uploaded Files</h4>
                   <ul className="divide-y divide-border rounded-xl border border-border">
                     {uploadedFiles.map((f, i) => (
                       <li
@@ -486,23 +663,18 @@ export default function QuestionGenerator() {
                           <div>
                             <p className="text-sm font-medium text-text">{f.name}</p>
                             <p className="text-xs text-text-muted">
-                              Teaching Hours: {f.teachingHours} | Blended's Date: {f.blendedDate}
+                              Teaching Hours: {f.teachingHours}h {f.teachingMinutes || 0}m
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button className="rounded-lg border border-secondary px-3 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10">
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => removeUploadedFile(i)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setUploadedDeleteIndex(i)}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -511,7 +683,7 @@ export default function QuestionGenerator() {
 
               {materials.length > 0 && uploadedFiles.length === 0 && (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-medium text-text">Previously Uploaded Sources</h4>
+                  <h4 className="mb-2 text-sm font-semibold text-text">Previously Uploaded Sources</h4>
                   <ul className="divide-y divide-border rounded-xl border border-border">
                     {materials.map((m) => (
                       <li
@@ -519,7 +691,7 @@ export default function QuestionGenerator() {
                         className="flex items-center justify-between px-4 py-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg text-xs font-bold text-text-muted">
                             FILE
                           </div>
                           <span className="truncate text-sm font-medium text-text">{m.filename}</span>
@@ -539,7 +711,7 @@ export default function QuestionGenerator() {
               <button
                 onClick={handleProceedToGeneration}
                 disabled={uploadedFiles.length === 0}
-                className="mt-4 w-full rounded-full bg-secondary py-3.5 text-base font-medium text-white transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 w-full rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Start Generation
               </button>
@@ -561,13 +733,67 @@ export default function QuestionGenerator() {
           )}
         </div>
       </div>
+
+      {pendingDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-text">Remove File</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Are you sure you want to remove "{pendingFiles[pendingDeleteIndex]?.name}" from the queue?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setPendingDeleteIndex(null)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removePendingFile(pendingDeleteIndex);
+                  setPendingDeleteIndex(null);
+                }}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {uploadedDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-text">Remove File</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Are you sure you want to remove "{uploadedFiles[uploadedDeleteIndex]?.name}"?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setUploadedDeleteIndex(null)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removeUploadedFile(uploadedDeleteIndex);
+                  setUploadedDeleteIndex(null);
+                }}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
     );
   }
-
-  // ── VIEW: Generation Settings (screenshot-inspired) ──
   if (view === "generation") {
     const totalHours = uploadedFiles.reduce((sum, f) => sum + (f.teachingHours || 0), 0);
-    const otherCount = Math.max(0, totalItems - mcCount - tfCount);
 
     return (
       <>
@@ -586,13 +812,13 @@ export default function QuestionGenerator() {
         <div className="flex flex-col gap-5">
           {/* File name */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-text">File name</label>
+            <label className="mb-2 block text-sm font-semibold text-text">File Name</label>
             <input
               type="text"
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
-              placeholder="File name"
-              className="w-full rounded-xl border-2 border-secondary/30 bg-transparent px-4 py-3 text-base text-text outline-none placeholder:text-text-muted focus:border-secondary"
+              placeholder="e.g. Midterm Exam - Math 101"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none placeholder:text-text-muted focus:border-secondary"
             />
           </div>
 
@@ -601,32 +827,27 @@ export default function QuestionGenerator() {
             <div className="flex flex-col gap-3">
               {uploadedFiles.map((f, i) => (
                 <div key={`${f.name}-${i}`} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${getFileIconColor(f.type)}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${getFileIconColor(f.type)}`}>
                       {getFileIcon(f.type)}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-text">{f.name}</p>
-                      <div className="mt-2 flex flex-col gap-1 text-xs text-text-muted">
-                        <span>Teaching Hours: {f.teachingHours || 0}h {f.teachingMinutes || 0}m</span>
-                        {f.blendedDate && <span>Blended Date: {f.blendedDate}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-text">{f.name}</p>
                     <button
-                      onClick={() => openEditModal(i)}
-                      className="rounded-lg border border-secondary px-3 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => removeUploadedFile(i)}
-                      className="text-red-500 hover:text-red-700"
+                      onClick={() => setDeleteFileIndex(i)}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-red-50 hover:text-red-500"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 pl-13">
+                    <span className="text-xs text-text-muted">{f.teachingHours || 0}h {f.teachingMinutes || 0}m</span>
+                    <button
+                      onClick={() => openEditModal(i)}
+                      className="rounded-lg border border-secondary px-2.5 py-0.5 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
+                    >
+                      Customize
                     </button>
                   </div>
                 </div>
@@ -634,80 +855,114 @@ export default function QuestionGenerator() {
             </div>
           )}
 
-          {/* Summary */}
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-text-muted">Total items:</span>
-              <input
-                type="number"
-                value={totalItems}
-                onChange={(e) => setTotalItems(parseInt(e.target.value) || 0)}
-                className="w-20 rounded-lg border border-border bg-transparent px-2 py-1 text-right text-sm font-medium text-text outline-none focus:border-secondary"
-                min={1}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-text-muted">Total hours:</span>
-              <span className="font-medium text-text">{totalHours}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-text-muted">Distribution ({totalItems} items):</span>
-              <div className="flex items-center gap-1">
+          {/* Question Types */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-text">Question Types</label>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3">
+                <span className="text-sm font-medium text-text-muted">MC</span>
                 <input
                   type="number"
                   value={mcCount}
                   onChange={(e) => setMcCount(parseInt(e.target.value) || 0)}
-                  className="w-14 rounded-lg border border-border bg-transparent px-2 py-1 text-center text-sm font-medium text-text outline-none focus:border-secondary"
+                  className="w-12 bg-transparent text-right text-sm font-medium text-text outline-none"
                   min={0}
                 />
-                <span className="text-text-muted">/</span>
+              </div>
+              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3">
+                <span className="text-sm font-medium text-text-muted">TF</span>
                 <input
                   type="number"
                   value={tfCount}
                   onChange={(e) => setTfCount(parseInt(e.target.value) || 0)}
-                  className="w-14 rounded-lg border border-border bg-transparent px-2 py-1 text-center text-sm font-medium text-text outline-none focus:border-secondary"
+                  className="w-12 bg-transparent text-right text-sm font-medium text-text outline-none"
                   min={0}
                 />
-                {otherCount > 0 && (
-                  <>
-                    <span className="text-text-muted">/</span>
-                    <span className="w-14 text-center text-sm font-medium text-text">{otherCount}</span>
-                  </>
-                )}
               </div>
+              <span className="text-sm font-bold text-text">= {totalItems}</span>
             </div>
           </div>
 
-          {/* Question types */}
-          <div>
-            <h3 className="mb-3 text-base font-semibold text-text">Question types</h3>
-            <div className="flex flex-col gap-2.5">
-              <label className="flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.mc}
-                  onChange={(e) => setSelectedTypes((prev) => ({ ...prev, mc: e.target.checked }))}
-                  className="h-5 w-5 rounded border-border accent-secondary"
-                />
-                <span className="text-sm text-text">Multiple Choice</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.tf}
-                  onChange={(e) => setSelectedTypes((prev) => ({ ...prev, tf: e.target.checked }))}
-                  className="h-5 w-5 rounded border-border accent-secondary"
-                />
-                <span className="text-sm text-text">True or False</span>
-              </label>
+          {/* TOS collapsible */}
+          {uploadedFiles.length > 0 && totalHours > 0 && (
+            <div className="rounded-xl border border-border bg-surface">
+              <button
+                onClick={() => setTosExpanded(!tosExpanded)}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-text"
+              >
+                <span>Table of Specifications</span>
+                <svg
+                  className={`h-4 w-4 text-text-muted transition-transform ${tosExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {tosExpanded && (
+                <div className="border-t border-border px-4 pb-4 pt-3">
+                  <div className="flex flex-col gap-3">
+                    {uploadedFiles.map((f, i) => {
+                      const fileHours = f.teachingHours || 0;
+                      const topicWeight = fileHours / totalHours;
+                      const mcForFile = Math.round(mcCount * topicWeight);
+                      const tfForFile = Math.round(tfCount * topicWeight);
+                      const itemsForFile = mcForFile + tfForFile;
+                      const fileBlooms = f.blooms || editBlooms;
+
+                      return (
+                        <div key={`${f.name}-${i}`} className="rounded-lg bg-muted-bg px-3 py-2.5">
+                          <p className="text-sm font-medium text-text">{f.name}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
+                            <span>{fileHours}h</span>
+                            <span className="text-text-muted/40">|</span>
+                            <span>MC {mcForFile}</span>
+                            <span>TF {tfForFile}</span>
+                            <span className="text-text-muted/40">|</span>
+                            <span className="font-medium text-text">{itemsForFile} items</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                            {fileBlooms.filter((b) => b.value > 0).map((b) => (
+                              <span key={b.name} className="flex items-center gap-1.5 text-xs text-text-muted">
+                                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: b.color }} />
+                                {b.name} {Math.round(itemsForFile * (b.value / 100))}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {uploadedFiles.length > 0 && totalHours === 0 && (
+            <p className="text-center text-sm text-text-muted">
+              Set teaching hours per file to enable the Table of Specifications.
+            </p>
+          )}
+
+          {/* Prompt */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-text">Prompt (optional)</label>
+            <input
+              type="text"
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              placeholder="e.g. Focus on higher-order thinking skills"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none placeholder:text-text-muted focus:border-secondary"
+            />
           </div>
 
           {/* Generate button */}
           <button
             onClick={handleGenerate}
             disabled={uploadedFiles.length === 0 || totalItems === 0}
-            className="w-full rounded-full bg-secondary py-4 text-base font-semibold text-white transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Generate
           </button>
@@ -720,11 +975,39 @@ export default function QuestionGenerator() {
           teachingHours={uploadedFiles[editFileIndex]?.teachingHours || 1}
           teachingMinutes={uploadedFiles[editFileIndex]?.teachingMinutes || 0}
           blooms={editBlooms}
-          prompt={editPrompt}
           onSave={handleSaveEdit}
           onClose={() => setEditModalOpen(false)}
         />
       )}
+
+      {deleteFileIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-text">Remove File</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Are you sure you want to remove "{uploadedFiles[deleteFileIndex]?.name}"?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteFileIndex(null)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removeUploadedFile(deleteFileIndex);
+                  setDeleteFileIndex(null);
+                }}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </>
     );
   }
@@ -732,6 +1015,7 @@ export default function QuestionGenerator() {
   // ── VIEW: Option 2 — Import Question Bank ──
   if (view === "upload-qa") {
     return (
+    <>
       <div className="flex flex-col">
         <button
           onClick={goBack}
@@ -754,7 +1038,7 @@ export default function QuestionGenerator() {
                 : "text-text-muted hover:text-text"
             }`}
           >
-            Sources ({materials.length})
+            Sources ({uploadedFiles.length})
           </button>
           <button
             onClick={() => setQaTab("extracted")}
@@ -794,7 +1078,7 @@ export default function QuestionGenerator() {
 
               {pendingFiles.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-medium text-text">
+                  <h4 className="mb-2 text-sm font-semibold text-text">
                     Queue ({pendingFiles.length} file{pendingFiles.length > 1 ? "s" : ""})
                   </h4>
                   <ul className="divide-y divide-border rounded-xl border border-border">
@@ -816,10 +1100,12 @@ export default function QuestionGenerator() {
                           <span className="whitespace-nowrap text-xs font-medium text-secondary">{progress}%</span>
                         ) : (
                           <button
-                            onClick={() => removePendingFile(i)}
-                            className="whitespace-nowrap text-xs text-red-500 hover:text-red-700"
+                            onClick={() => setPendingDeleteIndex(i)}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                           >
-                            Remove
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         )}
                       </li>
@@ -828,7 +1114,7 @@ export default function QuestionGenerator() {
 
                   <button
                     disabled={uploadingIndex !== null}
-                    className="mt-3 w-full rounded-full bg-secondary py-3 text-sm font-medium text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
+                    className="mt-3 w-full rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
                   >
                     {uploadingIndex !== null
                       ? `Uploading ${uploadingIndex + 1} of ${pendingFiles.length}...`
@@ -836,7 +1122,7 @@ export default function QuestionGenerator() {
                   </button>
 
                   {uploadingIndex !== null && (
-                    <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                    <div className="mt-2 h-2 w-full rounded-full bg-border">
                       <div
                         className="h-2 rounded-full bg-secondary transition-all"
                         style={{ width: `${progress}%` }}
@@ -848,7 +1134,7 @@ export default function QuestionGenerator() {
 
               {materials.length > 0 && pendingFiles.length === 0 && (
                 <div className="mt-4">
-                  <h4 className="mb-2 text-sm font-medium text-text">Previously Imported</h4>
+                  <h4 className="mb-2 text-sm font-semibold text-text">Previously Imported</h4>
                   <ul className="divide-y divide-border rounded-xl border border-border">
                     {materials.map((m) => (
                       <li
@@ -856,7 +1142,7 @@ export default function QuestionGenerator() {
                         className="flex items-center justify-between px-4 py-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-600">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted-bg text-xs font-bold text-text-muted">
                             FILE
                           </div>
                           <span className="truncate text-sm font-medium text-text">{m.filename}</span>
@@ -890,6 +1176,35 @@ export default function QuestionGenerator() {
           )}
         </div>
       </div>
+
+      {pendingDeleteIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-text">Remove File</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Are you sure you want to remove "{pendingFiles[pendingDeleteIndex]?.name}" from the queue?
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setPendingDeleteIndex(null)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-muted-bg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  removePendingFile(pendingDeleteIndex);
+                  setPendingDeleteIndex(null);
+                }}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
     );
   }
 
