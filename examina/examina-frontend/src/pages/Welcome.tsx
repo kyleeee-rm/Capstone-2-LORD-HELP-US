@@ -23,7 +23,8 @@ export default function Welcome() {
 
       <div className="flex w-full max-w-[400px] flex-col items-center">
         <Button
-          className="w-full rounded-full py-3.5 text-base max-[360px]:py-3 max-[360px]:text-sm"
+          size="lg"
+          className="w-full max-[360px]:py-3 max-[360px]:text-base"
           onClick={() => navigate("/register")}
         >
           Get Started

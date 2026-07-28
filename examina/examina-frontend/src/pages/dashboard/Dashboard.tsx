@@ -6,7 +6,7 @@ import itemAna from "../../assets/analy-img.png";
 
 const modules = [
   {
-    title: "Exam Generator",
+    title: "Exam Generation",
     description: "Generate exam questions from your materials",
     path: "/dashboard/questions",
     bg: "bg-secondary",
