@@ -26,8 +26,12 @@ services:
     build: ./examina-backend
     volumes:
       - ./examina-backend/app:/app/app
+      - ./examina-backend/alembic:/app/alembic
+      - ./examina-backend/alembic.ini:/app/alembic.ini
+    env_file:
+      - ./examina-backend/.env
     environment:
-      DATABASE_URL: postgresql://examina:examina_dev_password@db:5432/examina
+      DATABASE_URL: postgresql+psycopg://examina:examina_dev_password@db:5432/examina
       CHROMA_URL: http://chromadb:8000
     depends_on:
       db:
