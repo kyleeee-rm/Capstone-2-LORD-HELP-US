@@ -9,6 +9,10 @@ import NotFound from "../pages/NotFound";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 
+// Legal
+import Terms from "../pages/legal/Terms";
+import Privacy from "../pages/legal/Privacy";
+
 // Dashboard
 import DashboardLayout from "../layouts/DashboardLayout";
 import Dashboard from "../pages/dashboard/Dashboard";
@@ -41,6 +45,10 @@ export default function AppRouter() {
         {/* Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Legal */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         {/* Dashboard (protected) */}
         <Route element={<ProtectedRoute />}>

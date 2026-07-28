@@ -5,7 +5,7 @@ export default function Notifications() {
 
   return (
     <div className="pb-20 md:pb-6">
-      <div className="-mx-4 flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
+      <div className="-mx-4 -mt-4 flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
         <button
           onClick={() => navigate(-1)}
           className="cursor-pointer rounded-lg border-none bg-transparent p-1.5 text-text transition-colors hover:bg-muted-bg"

@@ -15,7 +15,7 @@ export default function DashboardLayout() {
     <div className="flex min-h-screen flex-col bg-bg">
       {showNavbar && <Navbar onMenuClick={() => setSidebarOpen(true)} />}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="flex-1 px-4 pb-20 md:px-6 md:pb-6">
+      <main className="flex-1 px-4 pt-4 pb-20 md:px-6 md:pt-6 md:pb-6">
         <Outlet />
       </main>
       <BottomNav />

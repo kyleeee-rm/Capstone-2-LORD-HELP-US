@@ -7,15 +7,10 @@ type AuthState = {
   logout: () => void;
 };
 
-export const DEV_EMAIL = "dev@examina.com";
-export const DEV_PASSWORD = "examina123";
-
-const devUser = import.meta.env.DEV ? DEV_EMAIL : null;
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: devUser,
+      user: null,
       login: (user) => set({ user }),
       logout: () => set({ user: null }),
     }),
