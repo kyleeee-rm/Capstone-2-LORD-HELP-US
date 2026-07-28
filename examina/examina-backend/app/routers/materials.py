@@ -20,7 +20,7 @@ from app.schemas.materials import (
 )
 from app.services import storage
 
-router = APIRouter(prefix="/subjects", tags=["materials"])
+router = APIRouter(prefix="/subjects", tags=["Learning Materials"])
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf": ".pdf",
