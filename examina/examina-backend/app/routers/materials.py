@@ -1,42 +1,3 @@
-<<<<<<< HEAD
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-import uuid
-
-router = APIRouter(prefix="/materials", tags=["materials"])
-
-materials_db: dict[str, dict] = {}
-
-
-@router.post("/upload")
-async def upload_material(
-    subject_id: str = Form(...),
-    file: UploadFile = File(...),
-):
-    material_id = str(uuid.uuid4())
-    material = {
-        "id": material_id,
-        "subject_id": subject_id,
-        "filename": file.filename,
-        "content_type": file.content_type,
-    }
-    materials_db[material_id] = material
-    return material
-
-
-@router.get("")
-def list_materials(subject_id: str = None):
-    if subject_id:
-        return [m for m in materials_db.values() if m["subject_id"] == subject_id]
-    return list(materials_db.values())
-
-
-@router.delete("/{material_id}")
-def delete_material(material_id: str):
-    if material_id not in materials_db:
-        raise HTTPException(status_code=404, detail="Material not found")
-    del materials_db[material_id]
-    return {"detail": "Deleted"}
-=======
 import mimetypes
 import uuid
 from pathlib import Path
@@ -52,7 +13,6 @@ from app.models.faculty import Faculty
 from app.models.learning_material import LearningMaterial
 from app.models.subject_folder import SubjectFolder
 from app.schemas.materials import (
-    #MaterialListItem,
     MaterialListResponse,
     MaterialStatusResponse,
     MaterialUploadResponse,
@@ -67,9 +27,6 @@ ALLOWED_CONTENT_TYPES = {
 }
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
-# Rough stepped estimate for the polling endpoint - contract shows
-# progress_pct as an example value, not an exact formula. Revisit once
-# Week 4 gives real per-chunk progress to compute against.
 STATUS_PROGRESS = {
     "uploaded": 0,
     "extracting": 25,
@@ -82,9 +39,6 @@ STATUS_PROGRESS = {
 
 def _get_owned_folder(db: Session, folder_id: uuid.UUID, faculty: Faculty) -> SubjectFolder:
     folder = db.get(SubjectFolder, folder_id)
-    # Same error for "doesn't exist" and "exists but isn't yours" -
-    # deliberately avoids leaking whether a given folder_id belongs to
-    # someone else.
     if folder is None or folder.subject.faculty_id != faculty.faculty_id:
         raise AppError(404, "folder_not_found", "Subject folder not found.")
     return folder
@@ -93,19 +47,15 @@ def _get_owned_folder(db: Session, folder_id: uuid.UUID, faculty: Faculty) -> Su
 def _detect_extension(file: UploadFile) -> str | None:
     if file.content_type in ALLOWED_CONTENT_TYPES:
         return ALLOWED_CONTENT_TYPES[file.content_type]
-    # Some clients send a generic/missing content-type - fall back to the
-    # filename extension rather than rejecting a legitimate PDF/DOCX outright.
     suffix = Path(file.filename or "").suffix.lower()
     return suffix if suffix in ALLOWED_EXTENSIONS else None
 
 
 def _try_count_pages(path: Path, extension: str) -> int | None:
-    # Page count for DOCX isn't reliably derivable without full extraction
-    # (Week 4's job) - only attempt this for PDFs.
     if extension != ".pdf":
         return None
     try:
-        import fitz  # PyMuPDF
+        import fitz
 
         with fitz.open(path) as doc:
             return doc.page_count
@@ -136,8 +86,6 @@ def upload_material(
 
     material_id = uuid.uuid4()
 
-    # Streamed to disk with the size cap enforced during the write itself,
-    # not checked afterward - a spoofed Content-Length shouldn't matter.
     storage_path, size_bytes = storage.save_upload_stream(
         folder_id=folder_id,
         material_id=material_id,
@@ -168,7 +116,6 @@ def upload_material(
         db.commit()
         db.refresh(material)
     except Exception:
-        # Don't leave an orphaned file on disk if the DB insert fails.
         storage.delete_file(storage_path)
         db.rollback()
         raise
@@ -200,8 +147,6 @@ def material_status(
 
     material = db.get(LearningMaterial, material_id)
     if material is None or material.folder_id != folder_id:
-        # NOTE: material_not_found isn't in API_CONTRACT-1.md yet - add it
-        # when updating the contract doc.
         raise AppError(404, "material_not_found", "Material not found.")
 
     return MaterialStatusResponse(
@@ -209,4 +154,3 @@ def material_status(
         status=material.upload_status,
         progress_pct=STATUS_PROGRESS.get(material.upload_status, 0),
     )
->>>>>>> origin/edmi

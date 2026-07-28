@@ -2,11 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EditModal from "../../components/EditModal";
 import { getSubjects, createSubject } from "../../services/subjectService";
-import {
-  uploadMaterial,
-  getMaterials,
-  deleteMaterial,
-} from "../../services/materialService";
 
 type View = "subjects" | "options" | "upload-lm" | "generation" | "upload-qa";
 
@@ -22,7 +17,7 @@ interface UploadedFile {
 
 export default function QuestionGenerator() {
   const navigate = useNavigate();
-  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [subjects, setSubjects] = useState<{ subject_id: string; subject_name: string }[]>([]);
   const [view, setView] = useState<View>("subjects");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [newSubject, setNewSubject] = useState("");
@@ -56,7 +51,7 @@ export default function QuestionGenerator() {
   ]);
   const [editPrompt, setEditPrompt] = useState("");
 
-  const selectedSubject = subjects.find((s) => s.id === selectedSubjectId);
+  const selectedSubject = subjects.find((s) => s.subject_id === selectedSubjectId);
 
   // Hide bottomnav on generation view
   useEffect(() => {
@@ -75,8 +70,8 @@ export default function QuestionGenerator() {
       .then(setSubjects)
       .catch(() => setSubjects([]));
 
-  const fetchMaterials = (subjectId: string) =>
-    getMaterials(subjectId).then(setMaterials);
+  const fetchMaterials = (_subjectId: string) =>
+    Promise.resolve([]).then(setMaterials);
 
   useEffect(() => {
     fetchSubjects();
@@ -84,7 +79,14 @@ export default function QuestionGenerator() {
 
   const handleCreate = async () => {
     if (!newSubject.trim()) return;
-    await createSubject(newSubject.trim());
+    await createSubject({
+      subject_code: newSubject.trim().slice(0, 10).toUpperCase().replace(/\s/g, ""),
+      subject_name: newSubject.trim(),
+      course: "",
+      section: "",
+      semester: "",
+      academic_year: "",
+    });
     setNewSubject("");
     fetchSubjects();
   };
@@ -171,17 +173,12 @@ export default function QuestionGenerator() {
 
   const handleProceedToGeneration = () => {
     if (uploadedFiles.length === 0) return;
-    setFileName(`${selectedSubject?.name || "Exam"} - ${new Date().toLocaleDateString()}`);
+    setFileName(`${selectedSubject?.subject_name || "Exam"} - ${new Date().toLocaleDateString()}`);
     setView("generation");
   };
 
-  const handleDelete = async (materialId: string) => {
-    try {
-      await deleteMaterial(materialId);
-      fetchMaterials(selectedSubjectId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-    }
+  const handleDelete = async (_materialId: string) => {
+    // TODO: Implement delete when backend supports it
   };
 
   const openEditModal = (index: number) => {
@@ -270,8 +267,8 @@ export default function QuestionGenerator() {
           <div className="mt-4 grid gap-3">
             {subjects.map((s) => (
               <button
-                key={s.id}
-                onClick={() => selectSubject(s.id)}
+                key={s.subject_id}
+                onClick={() => selectSubject(s.subject_id)}
                 className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-secondary"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
@@ -279,7 +276,7 @@ export default function QuestionGenerator() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                 </div>
-                <span className="flex-1 text-base font-medium text-text">{s.name}</span>
+                <span className="flex-1 text-base font-medium text-text">{s.subject_name}</span>
                 <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -308,7 +305,7 @@ export default function QuestionGenerator() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="mb-2 mt-1 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.name}</h1>
+        <h1 className="mb-2 mt-1 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.subject_name}</h1>
         <p className="mb-6 text-sm text-text-muted">Choose how you want to generate questions.</p>
 
         <div className="mt-6 grid gap-4">
@@ -368,7 +365,7 @@ export default function QuestionGenerator() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.name}</h1>
+        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.subject_name}</h1>
 
         {/* Tabs: Sources | Generated */}
         <div className="mt-4 flex border-b border-border">
@@ -584,7 +581,7 @@ export default function QuestionGenerator() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.name}</h1>
+        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.subject_name}</h1>
 
         <div className="flex flex-col gap-5">
           {/* File name */}
@@ -745,7 +742,7 @@ export default function QuestionGenerator() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.name}</h1>
+        <h1 className="mb-4 text-2xl font-bold text-secondary pl-1.5">{selectedSubject?.subject_name}</h1>
 
         {/* Tabs: Sources | Extracted Q&A */}
         <div className="mt-4 flex border-b border-border">

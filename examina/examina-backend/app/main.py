@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import subjects, materials
 
 from app.core.exceptions import AppError, app_error_handler
 from app.routers import auth, subject, subject_folder, materials
@@ -20,9 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(subjects.router)
-app.include_router(materials.router)
 
 
 @app.get("/health")

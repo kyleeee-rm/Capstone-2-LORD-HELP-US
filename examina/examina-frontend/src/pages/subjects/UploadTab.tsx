@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
-import { uploadMaterial, getMaterials, deleteMaterial } from "../../services/materialService";
+import { uploadMaterial, getMaterials, type MaterialListItem } from "../../services/materialService";
 
-export default function UploadTab({ subjectId }: { subjectId: string }) {
+export default function UploadTab({ folderId }: { folderId: string }) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [materials, setMaterials] = useState<{ id: string; filename: string }[]>([]);
+  const [materials, setMaterials] = useState<MaterialListItem[]>([]);
 
-  const fetchMaterials = () => getMaterials(subjectId).then(setMaterials);
+  const fetchMaterials = () => getMaterials(folderId).then(setMaterials).catch(() => setMaterials([]));
 
   useEffect(() => {
     fetchMaterials();
-  }, [subjectId]);
+  }, [folderId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
@@ -38,7 +38,17 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
       for (let i = 0; i < pendingFiles.length; i++) {
         setUploadingIndex(i);
         setProgress(0);
-        await uploadMaterial(subjectId, pendingFiles[i], (p) => setProgress(p));
+        const file = pendingFiles[i];
+        await uploadMaterial(
+          folderId,
+          file,
+          {
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            description: `Uploaded ${file.name}`,
+            teaching_hours: 1,
+          },
+          (p) => setProgress(p)
+        );
       }
       setSuccess(`${pendingFiles.length} file(s) uploaded successfully`);
       setPendingFiles([]);
@@ -51,21 +61,10 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
     }
   };
 
-  const handleDelete = async (materialId: string) => {
-    try {
-      await deleteMaterial(materialId);
-      fetchMaterials();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-    }
-  };
-
   return (
     <div>
-      <h2 className="text-lg font-semibold text-text">Upload Learning Material</h2>
-
-      <label className="mt-2 block border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-        <span className="text-sm text-muted">Click to add files (PDF, DOCX)</span>
+      <label className="mt-2 block cursor-pointer rounded-xl border-2 border-dashed border-border p-6 text-center transition-colors hover:border-primary">
+        <span className="text-sm text-text-muted">Click to add files (PDF, DOCX)</span>
         <input
           type="file"
           accept=".pdf,.docx"
@@ -77,17 +76,19 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
 
       {pendingFiles.length > 0 && (
         <div className="mt-3">
-          <h4 className="text-sm font-medium text-text mb-1">Queue ({pendingFiles.length} file{pendingFiles.length > 1 ? "s" : ""})</h4>
-          <ul className="divide-y divide-border border border-border rounded-lg">
+          <h4 className="mb-1 text-sm font-medium text-text">
+            Queue ({pendingFiles.length} file{pendingFiles.length > 1 ? "s" : ""})
+          </h4>
+          <ul className="divide-y divide-border rounded-xl border border-border">
             {pendingFiles.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="flex items-center justify-between px-3 py-2 text-sm text-text bg-surface">
+              <li key={`${f.name}-${i}`} className="flex items-center justify-between px-4 py-3 text-sm text-text">
                 <span className="truncate mr-2">{f.name}</span>
                 {uploadingIndex === i ? (
-                  <span className="text-xs text-muted whitespace-nowrap">{progress}%</span>
+                  <span className="whitespace-nowrap text-xs font-medium text-primary">{progress}%</span>
                 ) : (
                   <button
                     onClick={() => removePendingFile(i)}
-                    className="text-red-500 hover:text-red-700 text-xs whitespace-nowrap"
+                    className="whitespace-nowrap text-xs text-red-500 hover:text-red-700"
                   >
                     Remove
                   </button>
@@ -99,7 +100,7 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
           <button
             onClick={handleUploadAll}
             disabled={uploadingIndex !== null}
-            className="mt-3 w-full px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50"
+            className="mt-3 w-full rounded-full bg-primary py-3 text-sm font-medium text-white disabled:opacity-50"
           >
             {uploadingIndex !== null
               ? `Uploading ${uploadingIndex + 1} of ${pendingFiles.length}...`
@@ -107,9 +108,9 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
           </button>
 
           {uploadingIndex !== null && (
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
               <div
-                className="bg-primary h-2 rounded-full transition-all"
+                className="h-2 rounded-full bg-primary transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -122,17 +123,16 @@ export default function UploadTab({ subjectId }: { subjectId: string }) {
 
       {materials.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-sm font-medium text-text mb-1">Uploaded Files</h4>
-          <ul className="divide-y divide-border border border-border rounded-lg">
+          <h4 className="mb-2 text-sm font-medium text-text">Uploaded Files</h4>
+          <ul className="divide-y divide-border rounded-xl border border-border">
             {materials.map((m) => (
-              <li key={m.id} className="flex items-center justify-between px-3 py-2 text-sm text-text bg-surface">
-                <span className="truncate mr-2">{m.filename}</span>
-                <button
-                  onClick={() => handleDelete(m.id)}
-                  className="text-red-500 hover:text-red-700 text-xs whitespace-nowrap"
-                >
-                  Delete
-                </button>
+              <li key={m.id} className="flex items-center justify-between px-4 py-3 text-sm text-text">
+                <div>
+                  <span className="truncate font-medium">{m.filename}</span>
+                  <span className="ml-2 text-xs text-text-muted">
+                    {m.status}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
