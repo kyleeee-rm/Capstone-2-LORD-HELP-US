@@ -11,23 +11,23 @@ from app.db.base import Base
 
 class LearningMaterial(Base):
     """Matches ERD's LearningMaterials table, with two additions the ERD
-    doesn't have — both flagged, not silently snuck in. See
-    CHANGES_MATERIALS_MODULE.md for the full rationale.
+        doesn't have — both flagged, not silently snuck in. See
+        CHANGES_MATERIALS_MODULE.md for the full rationale.
 
-    Deliberately has NO relationship() to Subject or Faculty. Those models
-    are owned by teammates and adding a relationship here requires a
-    matching back_populates on their side — get that wrong and the mapper
-    fails at first use, not at import time, which makes it a nasty bug to
-    trace. Plain FK columns only for now; add relationships later once
-    coordinated with whoever owns subjects.py.
-    """
+        Deliberately has NO relationship() to SubjectFolder or Faculty. Those
+        models are owned by teammates and adding a relationship here requires a
+        matching back_populates on their side — get that wrong and the mapper
+        fails at first use, not at import time, which makes it a nasty bug to
+        trace. Plain FK columns only for now; add relationships later once
+        coordinated with whoever owns subject_folder.py.
+        """
 
     __tablename__ = "learning_materials"
 
     material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    subject_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("subjects.subject_id"), nullable=False, index=True
+    folder_id: Mapped[uuid.UUID] = mapped_column(
+    UUID(as_uuid=True), ForeignKey("subject_folders.folder_id"), nullable=False, index=True
     )
     faculty_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("faculty.faculty_id"), nullable=False

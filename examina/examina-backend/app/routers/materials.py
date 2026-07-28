@@ -11,16 +11,16 @@ from app.db.session import get_db
 from app.deps import get_current_user
 from app.models.faculty import Faculty
 from app.models.learning_material import LearningMaterial
-from app.models.subject import Subject
+from app.models.subject_folder import SubjectFolder
 from app.schemas.materials import (
-    MaterialListItem,
+    #MaterialListItem,
     MaterialListResponse,
     MaterialStatusResponse,
     MaterialUploadResponse,
 )
 from app.services import storage
 
-router = APIRouter(prefix="/subjects", tags=["Learning Materials"])
+router = APIRouter(prefix="/subject-folders", tags=["Learning Materials"])
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf": ".pdf",
@@ -41,14 +41,14 @@ STATUS_PROGRESS = {
 }
 
 
-def _get_owned_subject(db: Session, subject_id: uuid.UUID, faculty: Faculty) -> Subject:
-    subject = db.get(Subject, subject_id)
+def _get_owned_folder(db: Session, folder_id: uuid.UUID, faculty: Faculty) -> SubjectFolder:
+    folder = db.get(SubjectFolder, folder_id)
     # Same error for "doesn't exist" and "exists but isn't yours" -
-    # deliberately avoids leaking whether a given subject_id belongs to
+    # deliberately avoids leaking whether a given folder_id belongs to
     # someone else.
-    if subject is None or subject.faculty_id != faculty.faculty_id:
-        raise AppError(404, "subject_not_found", "Subject not found.")
-    return subject
+    if folder is None or folder.subject.faculty_id != faculty.faculty_id:
+        raise AppError(404, "folder_not_found", "Subject folder not found.")
+    return folder
 
 
 def _detect_extension(file: UploadFile) -> str | None:
@@ -75,12 +75,12 @@ def _try_count_pages(path: Path, extension: str) -> int | None:
 
 
 @router.post(
-    "/{subject_id}/materials",
+    "/{folder_id}/materials",
     response_model=MaterialUploadResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
 def upload_material(
-    subject_id: uuid.UUID,
+    folder_id: uuid.UUID,
     file: UploadFile = File(...),
     title: str = Form(...),
     description: str = Form(...),
@@ -89,7 +89,7 @@ def upload_material(
     db: Session = Depends(get_db),
     current_user: Faculty = Depends(get_current_user),
 ):
-    _get_owned_subject(db, subject_id, current_user)
+    _get_owned_folder(db, folder_id, current_user)
 
     extension = _detect_extension(file)
     if extension is None:
@@ -100,7 +100,7 @@ def upload_material(
     # Streamed to disk with the size cap enforced during the write itself,
     # not checked afterward - a spoofed Content-Length shouldn't matter.
     storage_path, size_bytes = storage.save_upload_stream(
-        subject_id=subject_id,
+        folder_id=folder_id,
         material_id=material_id,
         extension=extension,
         file_obj=file.file,
@@ -111,7 +111,7 @@ def upload_material(
 
     material = LearningMaterial(
         material_id=material_id,
-        subject_id=subject_id,
+        folder_id=folder_id,
         faculty_id=current_user.faculty_id,
         title=title,
         description=description,
@@ -137,30 +137,30 @@ def upload_material(
     return material
 
 
-@router.get("/{subject_id}/materials", response_model=MaterialListResponse)
+@router.get("/{folder_id}/materials", response_model=MaterialListResponse)
 def list_materials(
-    subject_id: uuid.UUID,
+    folder_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: Faculty = Depends(get_current_user),
 ):
-    _get_owned_subject(db, subject_id, current_user)
+    _get_owned_folder(db, folder_id, current_user)
     materials = db.scalars(
-        select(LearningMaterial).where(LearningMaterial.subject_id == subject_id)
+        select(LearningMaterial).where(LearningMaterial.folder_id == folder_id)
     ).all()
     return MaterialListResponse(materials=materials)
 
 
-@router.get("/{subject_id}/materials/{material_id}/status", response_model=MaterialStatusResponse)
+@router.get("/{folder_id}/materials/{material_id}/status", response_model=MaterialStatusResponse)
 def material_status(
-    subject_id: uuid.UUID,
+    folder_id: uuid.UUID,
     material_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: Faculty = Depends(get_current_user),
 ):
-    _get_owned_subject(db, subject_id, current_user)
+    _get_owned_folder(db, folder_id, current_user)
 
     material = db.get(LearningMaterial, material_id)
-    if material is None or material.subject_id != subject_id:
+    if material is None or material.folder_id != folder_id:
         # NOTE: material_not_found isn't in API_CONTRACT-1.md yet - add it
         # when updating the contract doc.
         raise AppError(404, "material_not_found", "Material not found.")

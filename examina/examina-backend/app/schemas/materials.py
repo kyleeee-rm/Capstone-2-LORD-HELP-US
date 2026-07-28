@@ -15,7 +15,7 @@ class MaterialUploadResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: uuid.UUID = Field(validation_alias="material_id")
-    subject_id: uuid.UUID
+    folder_id: uuid.UUID
     filename: str = Field(validation_alias="file_name")
     lesson_label: str | None = None
     title: str

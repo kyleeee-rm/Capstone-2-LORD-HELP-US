@@ -20,14 +20,14 @@ def _resolve(storage_path: str) -> Path:
 
 
 def save_upload_stream(
-    subject_id: uuid.UUID, material_id: uuid.UUID, extension: str, file_obj: BinaryIO
+    folder_id: uuid.UUID, material_id: uuid.UUID, extension: str, file_obj: BinaryIO
 ) -> tuple[str, int]:
     """Streams file_obj to disk in fixed-size chunks, enforcing
     MAX_UPLOAD_SIZE_MB as it goes rather than trusting the Content-Length
     header (which a client can lie about). Returns (storage_path,
     size_in_bytes). Raises AppError(413, "file_too_large", ...) and cleans
     up the partial file if the limit is exceeded."""
-    relative_path = f"materials/{subject_id}/{material_id}{extension}"
+    relative_path = f"materials/{folder_id}/{material_id}{extension}"
     full_path = _resolve(relative_path)
     full_path.parent.mkdir(parents=True, exist_ok=True)
 
