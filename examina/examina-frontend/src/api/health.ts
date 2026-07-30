@@ -1,6 +1,6 @@
 // src/api/health.ts
 import api from "./axios";
-import { HealthResponse } from "../types/api";
+import type { HealthResponse } from "../types/api";
 
 export const checkHealth = async (): Promise<HealthResponse> => {
   const res = await api.get<HealthResponse>("/health");

@@ -1,16 +1,28 @@
+@import "tailwindcss";
 @import "./tokens.css";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
-  margin: 0;
-  font-family: var(--font-family);
+  font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+}
+
+/* Fullpage mode: hide bottom nav */
+main.fullpage ~ nav {
+  display: none;
+}
+
+/* Scroll wheel snap alignment */
+.scroll-snap-align-center {
+  scroll-snap-align: center;
 }
