@@ -38,9 +38,9 @@ class Subject(Base):
         nullable=False,
     )
 
-    section: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
+    year_level: Mapped[str] = mapped_column(
+    String(50),
+    nullable=False,
     )
 
     semester: Mapped[str] = mapped_column(

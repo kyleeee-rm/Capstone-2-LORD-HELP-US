@@ -8,7 +8,7 @@ class SubjectCreate(BaseModel):
     subject_code: str
     subject_name: str
     course: str
-    section: str
+    year_level: str
     semester: str
     academic_year: str
 
@@ -17,7 +17,7 @@ class SubjectUpdate(BaseModel):
     subject_code: str | None = None
     subject_name: str | None = None
     course: str | None = None
-    section: str | None = None
+    year_level: str | None = None
     semester: str | None = None
     academic_year: str | None = None
 
@@ -28,7 +28,7 @@ class SubjectResponse(BaseModel):
     subject_code: str
     subject_name: str
     course: str
-    section: str
+    year_level: str
     semester: str
     academic_year: str
     created_at: datetime
