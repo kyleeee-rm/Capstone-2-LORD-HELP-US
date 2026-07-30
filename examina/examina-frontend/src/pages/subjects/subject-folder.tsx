@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { useEffect } from "react";
-import { getFolders, createFolder, type SubjectFolder } from "../../services/subjectFolderService";
-import { useActivityStore } from "../../store/activityStore";
-import UploadTab from "./UploadTab";
+import { getFolders, createFolder, type SubjectFolder } from "../../services/subject-folder-service";
+import { useActivityStore } from "../../store/activity-store";
+import UploadTab from "./upload-tab";
 
 type FolderTab = "folders" | "archived" | "trash";
 

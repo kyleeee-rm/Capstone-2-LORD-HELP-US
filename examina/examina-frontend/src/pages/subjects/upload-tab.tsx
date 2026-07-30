@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { uploadMaterial, getMaterials, type MaterialListItem } from "../../services/materialService";
-import { useActivityStore } from "../../store/activityStore";
+import { uploadMaterial, getMaterials, type MaterialListItem } from "../../services/material-service";
+import { useActivityStore } from "../../store/activity-store";
 
 export default function UploadTab({ folderId }: { folderId: string }) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getSubjects, createSubject, type Subject } from "../../services/subjectService";
+import { getSubjects, createSubject, type Subject } from "../../services/subject-service";
 import { useNavigate } from "react-router-dom";
-import { useActivityStore } from "../../store/activityStore";
+import { useActivityStore } from "../../store/activity-store";
 
 type Tab = "all" | "archived";
 
