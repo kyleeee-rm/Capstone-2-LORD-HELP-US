@@ -40,38 +40,38 @@ export default function Dashboard() {
 
 			<div className="flex flex-col gap-4 pt-2">
 				<Button
-					render={<Link to="/dashboard/questions" />}
+					render={<Link to="/dashboard/questions-generation" />}
 					nativeButton={false}
-					className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
+					className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
 					<span className="text-lg font-semibold">Question Generation</span>
 					<img
 						src={questionImg}
 						alt="Question Generation"
-						className="h-22 w-auto object-contain shrink-0"
+						className="h-22 w-auto object-contain shrink-0 ml-auto"
 					/>
 				</Button>
 
 				<Button
 					render={<Link to="/dashboard/sheet-scanning" />}
 					nativeButton={false}
-					className="bg-tertiary text-white hover:bg-tertiary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
+					className="bg-tertiary text-white hover:bg-tertiary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
 					<span className="text-lg font-semibold">Sheet Scanning</span>
 					<img
 						src={scanImg}
 						alt="Sheet Scanning"
-						className="h-22 w-auto object-contain shrink-0"
+						className="h-22 w-auto object-contain shrink-0 ml-auto"
 					/>
 				</Button>
 
 				<Button
 					render={<Link to="/dashboard/analysis" />}
 					nativeButton={false}
-					className="bg-quaternary text-white hover:bg-quaternary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
+					className="bg-quaternary text-white hover:bg-quaternary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
 					<span className="text-lg font-semibold">Item Analysis</span>
 					<img
 						src={analyzeImg}
 						alt="Item Analysis"
-						className="h-22 w-auto object-contain shrink-0"
+						className="h-22 w-auto object-contain shrink-0 ml-auto"
 					/>
 				</Button>
 			</div>
@@ -95,7 +95,7 @@ export default function Dashboard() {
 							variant="outline"
 							size="sm"
 							render={<a href={activity.href} />}
-							className="flex items-center justify-center gap-3">
+							className="flex items-center justify-center gap-3 ">
 							<ItemContent className="flex-1">
 								<ItemTitle className="text-text">{activity.name}</ItemTitle>
 								<ItemDescription>

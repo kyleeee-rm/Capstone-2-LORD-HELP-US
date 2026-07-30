@@ -4,12 +4,13 @@ import {
 	useNavigate,
 	useSearchParams,
 } from "react-router-dom";
-import {Bell, Search, ArrowLeft, X, Settings} from "lucide-react";
+import {Bell, Search, X, Settings} from "lucide-react";
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
+import {PaginationPrevious} from "@/components/ui/pagination";
 import {
 	Dialog,
 	DialogContent,
@@ -43,13 +44,7 @@ export default function DashboardHeader() {
 			{isSearch ? (
 				<header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
 					<div className="flex items-center gap-3 h-16 px-4 sm:px-6 lg:px-8">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => navigate(-1)}
-							aria-label="Back">
-							<ArrowLeft className="size-6" />
-						</Button>
+						<PaginationPrevious text="Back" onClick={() => navigate(-1)} />
 						<div className="relative flex-1">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 							<Input
@@ -75,13 +70,7 @@ export default function DashboardHeader() {
 			) : isNotifications ? (
 				<header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
 					<div className="flex items-center gap-3 h-16 px-4 sm:px-6 lg:px-8">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => navigate(-1)}
-							aria-label="Back">
-							<ArrowLeft className="size-6" />
-						</Button>
+						<PaginationPrevious text="Back" onClick={() => navigate(-1)} />
 						<h1 className="text-lg font-bold text-text flex-1">
 							Notifications
 						</h1>

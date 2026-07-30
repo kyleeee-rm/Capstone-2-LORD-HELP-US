@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="size-4" /> },
-  { name: "Questions", href: "/dashboard/questions", icon: <FileText className="size-4" /> },
+  { name: "Questions", href: "/dashboard/questions-generation", icon: <FileText className="size-4" /> },
   { name: "Sheet Scanning", href: "/dashboard/sheet-scanning", icon: <Search className="size-4" /> },
   { name: "Analysis", href: "/dashboard/analysis", icon: <BarChart2 className="size-4" /> },
   { name: "Search", href: "/dashboard/search", icon: <Search className="size-4" /> },

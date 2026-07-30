@@ -4,7 +4,7 @@ import {Item, ItemGroup, ItemContent, ItemTitle, ItemMedia} from "@/components/u
 import {Empty, EmptyMedia, EmptyTitle, EmptyDescription} from "@/components/ui/empty";
 
 const suggestions = [
-	{title: "Question Generation", href: "/dashboard/questions"},
+	{title: "Question Generation", href: "/dashboard/questions-generation"},
 	{title: "Sheet Scanning", href: "/dashboard/sheet-scanning"},
 	{title: "Item Analysis", href: "/dashboard/analysis"},
 	{title: "Library", href: "/dashboard/library"},
