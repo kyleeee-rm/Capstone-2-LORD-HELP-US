@@ -39,9 +39,9 @@ function DialogContent({
 	children,
 	showCloseButton = true,
 	...props
-}: DialogPrimitive.Popup.Props & {
+}: React.PropsWithChildren<React.ComponentProps<"div"> & DialogPrimitive.Popup.Props & {
 	showCloseButton?: boolean;
-}) {
+}>) {
 	return (
 		<DialogPortal>
 			<DialogOverlay />
@@ -108,7 +108,7 @@ function DialogFooter({
 	);
 }
 
-function DialogTitle({className, ...props}: DialogPrimitive.Title.Props) {
+function DialogTitle({className, ...props}: React.PropsWithChildren<React.ComponentProps<"div"> & DialogPrimitive.Title.Props>) {
 	return (
 		<DialogPrimitive.Title
 			data-slot="dialog-title"
@@ -124,7 +124,7 @@ function DialogTitle({className, ...props}: DialogPrimitive.Title.Props) {
 function DialogDescription({
 	className,
 	...props
-}: DialogPrimitive.Description.Props) {
+}: React.PropsWithChildren<React.ComponentProps<"div"> & DialogPrimitive.Description.Props>) {
 	return (
 		<DialogPrimitive.Description
 			data-slot="dialog-description"

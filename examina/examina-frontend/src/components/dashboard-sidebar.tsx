@@ -63,14 +63,12 @@ export default function DashboardSidebar() {
               {navigation.map((item) => (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
-                    asChild
+                    render={<NavLink to={item.href} />}
                     tooltip={item.name}
                     isActive={false}
                   >
-                    <NavLink to={item.href}>
-                      {item.icon}
-                      <span>{item.name}</span>
-                    </NavLink>
+                    {item.icon}
+                    <span>{item.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -85,14 +83,12 @@ export default function DashboardSidebar() {
               {bottomNavigation.map((item) => (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
-                    asChild
+                    render={<NavLink to={item.href} />}
                     tooltip={item.name}
                     isActive={false}
                   >
-                    <NavLink to={item.href}>
-                      {item.icon}
-                      <span>{item.name}</span>
-                    </NavLink>
+                    {item.icon}
+                    <span>{item.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

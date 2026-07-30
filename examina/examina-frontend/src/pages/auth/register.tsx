@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services/auth-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,17 +11,28 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '
 
 export default function Register() {
   const navigate = useNavigate();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
+      await authService.register({ email, password, first_name: firstName, last_name: lastName });
       navigate('/login');
-    } catch {
-      setError('Registration failed');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setError(axiosErr.response?.data?.detail || 'Registration failed');
+      } else {
+        setError('Cannot connect to server');
+      }
     } finally {
       setLoading(false);
     }
@@ -51,21 +63,23 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <Field>
             <FieldLabel>First name</FieldLabel>
-            <Input type="text" required />
+            <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
           </Field>
           <Field>
             <FieldLabel>Last name</FieldLabel>
-            <Input type="text" required />
+            <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
           </Field>
           <Field>
             <FieldLabel>Email address</FieldLabel>
-            <Input type="email" required />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </Field>
           <Field>
             <FieldLabel>Password</FieldLabel>
             <InputGroup>
               <InputGroupInput
                 type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
               <InputGroupAddon align="inline-end">

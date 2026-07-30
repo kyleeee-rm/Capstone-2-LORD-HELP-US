@@ -40,48 +40,39 @@ export default function Dashboard() {
 
 			<div className="flex flex-col gap-4 pt-2">
 				<Button
-					asChild
+					render={<Link to="/dashboard/questions" />}
+					nativeButton={false}
 					className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
-					<Link
-						to="/dashboard/questions"
-						className="flex items-center justify-between w-full">
-						<span className="text-lg font-semibold">Question Generation</span>
-						<img
-							src={questionImg}
-							alt="Question Generation"
-							className="h-22 w-auto object-contain shrink-0"
-						/>
-					</Link>
+					<span className="text-lg font-semibold">Question Generation</span>
+					<img
+						src={questionImg}
+						alt="Question Generation"
+						className="h-22 w-auto object-contain shrink-0"
+					/>
 				</Button>
 
 				<Button
-					asChild
+					render={<Link to="/dashboard/sheet-scanning" />}
+					nativeButton={false}
 					className="bg-tertiary text-white hover:bg-tertiary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
-					<Link
-						to="/dashboard/sheet-scanning"
-						className="flex items-center justify-between w-full">
-						<span className="text-lg font-semibold">Sheet Scanning</span>
-						<img
-							src={scanImg}
-							alt="Sheet Scanning"
-							className="h-22 w-auto object-contain shrink-0"
-						/>
-					</Link>
+					<span className="text-lg font-semibold">Sheet Scanning</span>
+					<img
+						src={scanImg}
+						alt="Sheet Scanning"
+						className="h-22 w-auto object-contain shrink-0"
+					/>
 				</Button>
 
 				<Button
-					asChild
+					render={<Link to="/dashboard/analysis" />}
+					nativeButton={false}
 					className="bg-quaternary text-white hover:bg-quaternary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden">
-					<Link
-						to="/dashboard/analysis"
-						className="flex items-center justify-between w-full">
-						<span className="text-lg font-semibold">Item Analysis</span>
-						<img
-							src={analyzeImg}
-							alt="Item Analysis"
-							className="h-22 w-auto object-contain shrink-0"
-						/>
-					</Link>
+					<span className="text-lg font-semibold">Item Analysis</span>
+					<img
+						src={analyzeImg}
+						alt="Item Analysis"
+						className="h-22 w-auto object-contain shrink-0"
+					/>
 				</Button>
 			</div>
 			<h1 className="font-bold text-text text-nowrap text-[clamp(1.25rem,4vw,1.5rem)] pt-2">

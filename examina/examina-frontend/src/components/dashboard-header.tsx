@@ -117,7 +117,7 @@ export default function DashboardHeader() {
 							variant="ghost"
 							size="icon"
 							aria-label="Notifications"
-							className="relative flex-shrink-0">
+							className="relative shrink-0">
 							<Link to="/dashboard/notifications">
 								{bellIcon}
 								<span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
