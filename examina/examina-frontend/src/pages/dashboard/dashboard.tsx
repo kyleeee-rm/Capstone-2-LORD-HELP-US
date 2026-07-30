@@ -45,10 +45,10 @@ export default function Dashboard() {
 					<Link
 						to="/dashboard/questions"
 						className="flex items-center justify-between w-full">
-						<span className="text-lg font-semibold">Exam Builder</span>
+						<span className="text-lg font-semibold">Question Generation</span>
 						<img
 							src={questionImg}
-							alt="Exam Builder"
+							alt="Question Generation"
 							className="h-22 w-auto object-contain shrink-0"
 						/>
 					</Link>
@@ -60,10 +60,10 @@ export default function Dashboard() {
 					<Link
 						to="/dashboard/sheet-scanning"
 						className="flex items-center justify-between w-full">
-						<span className="text-lg font-semibold">Scan & Check</span>
+						<span className="text-lg font-semibold">Sheet Scanning</span>
 						<img
 							src={scanImg}
-							alt="Scan & Check"
+							alt="Sheet Scanning"
 							className="h-22 w-auto object-contain shrink-0"
 						/>
 					</Link>
