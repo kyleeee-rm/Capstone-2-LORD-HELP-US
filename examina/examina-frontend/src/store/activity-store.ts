@@ -6,6 +6,7 @@ export type Activity = {
   action: "created" | "archived" | "deleted" | "restored" | "uploaded" | "generated";
   type: "subject" | "folder" | "file" | "exam";
   name: string;
+  href: string;
   timestamp: number;
 };
 

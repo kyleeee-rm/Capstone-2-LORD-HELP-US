@@ -28,27 +28,30 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Questions", href: "/dashboard/questions", icon: FileText },
-  { name: "Sheet Scanning", href: "/dashboard/sheet-scanning", icon: Search },
-  { name: "Analysis", href: "/dashboard/analysis", icon: BarChart2 },
-  { name: "Search", href: "/dashboard/search", icon: Search },
-  { name: "Library", href: "/dashboard/library", icon: Library },
-  { name: "Reports", href: "/dashboard/reports", icon: BarChart2 },
+  { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="size-4" /> },
+  { name: "Questions", href: "/dashboard/questions", icon: <FileText className="size-4" /> },
+  { name: "Sheet Scanning", href: "/dashboard/sheet-scanning", icon: <Search className="size-4" /> },
+  { name: "Analysis", href: "/dashboard/analysis", icon: <BarChart2 className="size-4" /> },
+  { name: "Search", href: "/dashboard/search", icon: <Search className="size-4" /> },
+  { name: "Library", href: "/dashboard/library", icon: <Library className="size-4" /> },
+  { name: "Reports", href: "/dashboard/reports", icon: <BarChart2 className="size-4" /> },
 ];
 
 const bottomNavigation = [
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
-  { name: "Help", href: "/dashboard/help", icon: HelpCircle },
-  { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Settings", href: "/dashboard/settings", icon: <Settings className="size-4" /> },
+  { name: "Help", href: "/dashboard/help", icon: <HelpCircle className="size-4" /> },
+  { name: "Profile", href: "/dashboard/profile", icon: <User className="size-4" /> },
 ];
+
+const menuIcon = <Menu className="size-6" />;
+const menuIconSm = <Menu className="size-4" />;
 
 export default function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
         <Button variant="ghost" size="icon" className="w-full justify-start">
-          <Menu className="size-6" />
+          {menuIcon}
           <span className="text-sm font-medium">Menu</span>
         </Button>
       </SidebarHeader>
@@ -65,7 +68,7 @@ export default function DashboardSidebar() {
                     isActive={false}
                   >
                     <NavLink to={item.href}>
-                      <item.icon className="size-4" />
+                      {item.icon}
                       <span>{item.name}</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -87,7 +90,7 @@ export default function DashboardSidebar() {
                     isActive={false}
                   >
                     <NavLink to={item.href}>
-                      <item.icon className="size-4" />
+                      {item.icon}
                       <span>{item.name}</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -99,7 +102,7 @@ export default function DashboardSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-          <Menu className="size-4" />
+          {menuIconSm}
           <span>Menu</span>
         </Button>
       </SidebarFooter>

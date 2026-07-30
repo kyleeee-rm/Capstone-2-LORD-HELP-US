@@ -5,7 +5,7 @@ export default function Library() {
 	const navigate = useNavigate();
 
 	return (
-		<div className="flex flex-col gap-4 pb-20">
+		<div className="flex flex-col gap-4 pt-4 pb-20">
 			<div className="flex items-center gap-3">
 				<h1 className="text-2xl font-bold text-text">Library</h1>
 			</div>
