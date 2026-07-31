@@ -37,15 +37,15 @@ export default function NotificationSettingsDialog({
 				</DialogHeader>
 				<div className="flex flex-col gap-4">
 					<div className="flex items-center justify-between">
-						<Label htmlFor={examId} className="text-text">Exam notifications</Label>
+						<Label htmlFor={examId} className="text-foreground">Exam notifications</Label>
 						<Switch id={examId} defaultChecked />
 					</div>
 					<div className="flex items-center justify-between">
-						<Label htmlFor={analysisId} className="text-text">Analysis notifications</Label>
+						<Label htmlFor={analysisId} className="text-foreground">Analysis notifications</Label>
 						<Switch id={analysisId} defaultChecked />
 					</div>
 					<div className="flex items-center justify-between">
-						<Label htmlFor={sheetScanId} className="text-text">Sheet scan notifications</Label>
+						<Label htmlFor={sheetScanId} className="text-foreground">Sheet scan notifications</Label>
 						<Switch id={sheetScanId} />
 					</div>
 				</div>

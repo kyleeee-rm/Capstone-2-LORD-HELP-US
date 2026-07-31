@@ -1,120 +1,71 @@
-import {useAuthStore} from "@/shared/stores";
-import {useActivityStore} from "@/shared/stores";
-import {Button} from "@/shared/ui/button";
-import {
-	Item,
-	ItemGroup,
-	ItemContent,
-	ItemTitle,
-	ItemDescription,
-	ItemActions,
-	ItemMedia,
-} from "@/shared/ui/item";
+import {format} from "date-fns";
 import {Link} from "react-router-dom";
-import {formatDistanceToNow} from "date-fns";
-import {BookOpenCheck} from "lucide-react";
+import {useAuthStore} from "@/shared/stores";
+import {Button} from "@/shared/ui/button";
+import {getGreeting} from "./dashboard-utils";
+import RecentActivities from "./components/RecentActivities";
 import questionImg from "@/assets/question.png";
 import scanImg from "@/assets/scan.png";
 import analyzeImg from "@/assets/analyze.png";
 
-function getGreeting(): string {
-	const hour = new Date().getHours();
-	if (hour >= 5 && hour < 12) return "Good morning";
-	if (hour >= 12 && hour < 18) return "Good afternoon";
-	return "Good evening";
-}
+const FEATURES = [
+	{
+		to: "/dashboard/questions-generation",
+		title: "Question Generation",
+		image: questionImg,
+		className: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+	},
+	{
+		to: "/dashboard/sheet-scanning",
+		title: "Sheet Scanning",
+		image: scanImg,
+		className: "bg-tertiary text-white hover:bg-tertiary/80",
+	},
+	{
+		to: "/dashboard/analysis",
+		title: "Item Analysis",
+		image: analyzeImg,
+		className: "bg-quaternary text-white hover:bg-quaternary/80",
+	},
+] as const;
 
 export default function Dashboard() {
 	const user = useAuthStore((s) => s.user);
-	const activities = useActivityStore((s) => s.activities);
 
 	return (
-		<div className="flex flex-col gap-2">
-			<h1 className="font-bold text-text text-nowrap text-[clamp(1.45rem,4vw,1.5rem)]">
-				{getGreeting()}, {user?.first_name ?? "User"}!
-			</h1>
-			<p className="text-sm text-text-muted">
-				Your next assessment is just a few clicks away
-			</p>
-
-			<div className="flex flex-col gap-4 pt-2">
-				<Button
-					render={<Link to="/dashboard/questions-generation" />}
-					nativeButton={false}
-					className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
-					<span className="text-lg font-semibold">Question Generation</span>
-					<img
-						src={questionImg}
-						alt=""
-						aria-hidden="true"
-						className="h-22 w-auto object-contain shrink-0 ml-auto"
-					/>
-				</Button>
-
-				<Button
-					render={<Link to="/dashboard/sheet-scanning" />}
-					nativeButton={false}
-					className="bg-tertiary text-white hover:bg-tertiary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
-					<span className="text-lg font-semibold">Sheet Scanning</span>
-					<img
-						src={scanImg}
-						alt=""
-						aria-hidden="true"
-						className="h-22 w-auto object-contain shrink-0 ml-auto"
-					/>
-				</Button>
-
-				<Button
-					render={<Link to="/dashboard/analysis" />}
-					nativeButton={false}
-					className="bg-quaternary text-white hover:bg-quaternary/80 rounded-2xl h-auto shadow-sm pl-6 py-0 pr-0 overflow-hidden justify-start">
-					<span className="text-lg font-semibold">Item Analysis</span>
-					<img
-						src={analyzeImg}
-						alt=""
-						aria-hidden="true"
-						className="h-22 w-auto object-contain shrink-0 ml-auto"
-					/>
-				</Button>
+		<div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+			<div className="flex flex-col gap-1">
+				<h1 className="font-heading text-2xl font-semibold tracking-tight">
+					{getGreeting()}, {user?.first_name ?? "User"}!
+				</h1>
+				<p className="text-sm text-muted-foreground">
+					{format(new Date(), "EEEE, MMMM d")} · Your next assessment is just a
+					few clicks away
+				</p>
 			</div>
-			<h2 className="font-bold text-text text-nowrap text-[clamp(1.25rem,4vw,1.5rem)] pt-2">
-				Recent Activities
-			</h2>
 
-			{activities.length === 0 ? (
-				<Item variant="muted" size="sm">
-					<ItemContent>
-						<ItemTitle className="text-text-muted justify-center">
-							No recent activities
-						</ItemTitle>
-					</ItemContent>
-				</Item>
-			) : (
-				<ItemGroup>
-					{activities.slice(0, 5).map((activity) => (
-						<Item
-							key={activity.id}
-							variant="outline"
-							size="sm"
-							render={activity.href ? <a href={activity.href} /> : <div />}
-							className="flex items-center justify-center gap-3 ">
-							<ItemContent className="flex-1">
-								<ItemTitle className="text-text">{activity.name}</ItemTitle>
-								<ItemDescription>
-									{activity.action.charAt(0).toUpperCase() +
-										activity.action.slice(1)}{" "}
-									{activity.type}
-								</ItemDescription>
-							</ItemContent>
-							<ItemActions>
-								<p className="text-xs text-text-muted whitespace-nowrap">
-									{formatDistanceToNow(activity.timestamp, {addSuffix: true})}
-								</p>
-							</ItemActions>
-						</Item>
-					))}
-				</ItemGroup>
-			)}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				{FEATURES.map((feature) => (
+					<Button
+						key={feature.to}
+						render={<Link to={feature.to} />}
+						nativeButton={false}
+						aria-label={`Open ${feature.title}`}
+						className={`${feature.className} w-full rounded-2xl h-auto min-h-20 md:min-h-36 shadow-sm pl-5 sm:pl-6 pr-0 overflow-hidden`}>
+						<span className="min-w-0 flex-1 text-base sm:text-lg lg:text-xl font-semibold text-left leading-snug">
+							{feature.title}
+						</span>
+						<img
+							src={feature.image}
+							alt=""
+							aria-hidden="true"
+							className="h-full w-24 sm:w-32 md:w-full md:max-w-52 shrink-0 self-stretch object-cover"
+						/>
+					</Button>
+				))}
+			</div>
+
+			<RecentActivities />
 		</div>
 	);
 }

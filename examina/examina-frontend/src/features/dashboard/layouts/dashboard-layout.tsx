@@ -6,7 +6,7 @@ export default function DashboardLayout() {
 	return (
 		<div className="flex min-h-screen flex-col">
 			<DashboardHeader />
-			<main className="flex-1 py-20 px-4">
+			<main className="flex-1 py-20 px-4 sm:px-6 lg:px-8">
 				<Outlet />
 			</main>
 			<BottomNav />

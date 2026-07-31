@@ -19,7 +19,7 @@ export default function Search() {
 	);
 
 	return (
-		<div className="flex flex-col gap-4 pt-4 pb-20">
+		<div className="mx-auto flex w-full max-w-3xl flex-col gap-4 pt-4">
 			{query === "" ? (
 				<ItemGroup className="gap-0">
 					{suggestions.map((s) => (
@@ -29,7 +29,7 @@ export default function Search() {
 									<SearchIcon className="size-4 text-muted-foreground" />
 								</ItemMedia>
 								<ItemContent>
-									<ItemTitle className="text-text">{s.title}</ItemTitle>
+									<ItemTitle className="text-foreground">{s.title}</ItemTitle>
 								</ItemContent>
 							</Item>
 						</Link>
@@ -54,7 +54,7 @@ export default function Search() {
 									<SearchIcon className="size-4 text-muted-foreground" />
 								</ItemMedia>
 								<ItemContent>
-									<ItemTitle className="text-text">{s.title}</ItemTitle>
+									<ItemTitle className="text-foreground">{s.title}</ItemTitle>
 								</ItemContent>
 							</Item>
 						</Link>

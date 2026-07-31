@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 export type Activity = {
   id: string;
-  action: "created" | "archived" | "deleted" | "restored" | "uploaded" | "generated";
+  action: "created" | "updated" | "archived" | "deleted" | "restored" | "uploaded" | "generated";
   type: "subject" | "folder" | "file" | "exam";
   name: string;
   href?: string;
@@ -29,6 +29,6 @@ export const useActivityStore = create<ActivityState>()(
         })),
       clearActivities: () => set({ activities: [] }),
     }),
-    { name: "activity-storage" }
+    { name: "activity-storage", version: 1 }
   )
 );

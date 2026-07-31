@@ -1,10 +1,7 @@
 import api from '@/shared/api/client';
+import type { MaterialListItem } from '@/shared/types/domain';
 
-export type MaterialListItem = {
-  id: string;
-  filename: string;
-  status: string;
-};
+export type { MaterialListItem };
 
 export type MaterialUploadResponse = {
   id: string;

@@ -40,7 +40,7 @@ export function useLogin() {
     setLoading(true);
     try {
       const data = await authService.login({ email, password });
-      setAuth(data.user, data.access_token);
+      setAuth(data.user, data.access_token, data.expires_in);
       navigate('/dashboard');
     } catch (err: unknown) {
       setErrors({ field: '', server: parseApiError(err, 'Invalid email or password') });

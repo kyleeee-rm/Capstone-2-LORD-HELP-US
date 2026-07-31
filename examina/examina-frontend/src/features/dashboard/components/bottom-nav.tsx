@@ -12,7 +12,7 @@ export default function BottomNav() {
 	const location = useLocation();
 
 	return (
-		<nav aria-label="Main" className="fixed bottom-0 left-0 right-0 z-40 pb-4 bg-surface border-t border-border md:hidden">
+		<nav aria-label="Main" className="fixed bottom-0 left-0 right-0 z-40 pb-[max(env(safe-area-inset-bottom),1rem)] bg-background border-t border-border md:hidden">
 			<div className="flex items-center justify-around h-16 px-4">
 				{navItems.map((item) => (
 					<Link
@@ -23,7 +23,7 @@ export default function BottomNav() {
 							"flex flex-col items-center gap-0 p-2 rounded-xl transition-colors",
 							location.pathname === item.href
 								? "text-primary"
-								: "text-text-muted hover:text-text",
+								: "text-muted-foreground hover:text-foreground",
 						)}>
 						<span aria-hidden="true">{item.icon}</span>
 						<span className="text-xs font-medium">{item.name}</span>

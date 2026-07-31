@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getSubjects, createSubject } from '../api/subject-service';
+import { getSubjects, createSubject, deleteSubject } from '../api/subject-service';
 import type { Subject, SubjectCreate } from '@/shared/types/domain';
 import { useActivityStore } from '@/shared/stores';
 
@@ -11,7 +11,6 @@ export function useSubjects() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
     getSubjects(controller.signal)
       .then(setSubjects)
       .catch(() => { if (!controller.signal.aborted) setSubjects([]); })
@@ -19,7 +18,10 @@ export function useSubjects() {
     return () => controller.abort();
   }, [fetchKey]);
 
-  const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
+  const refetch = useCallback(() => {
+    setLoading(true);
+    setFetchKey((k) => k + 1);
+  }, []);
 
   const addSubject = useCallback(async (payload: SubjectCreate) => {
     await createSubject(payload);
@@ -32,9 +34,6 @@ export function useSubjects() {
   }, [refetch, addActivity]);
 
   const archiveSubjects = useCallback((ids: Set<string>) => {
-    setSubjects((prev) =>
-      prev.map((s) => ids.has(s.subject_id) ? { ...s, _archived: true } : s)
-    );
     ids.forEach((id) => {
       const subject = subjects.find((s) => s.subject_id === id);
       if (subject) {
@@ -47,8 +46,8 @@ export function useSubjects() {
     });
   }, [subjects, addActivity]);
 
-  const deleteSubjects = useCallback((ids: Set<string>) => {
-    setSubjects((prev) => prev.filter((s) => !ids.has(s.subject_id)));
+  const deleteSubjects = useCallback(async (ids: Set<string>) => {
+    await Promise.all(Array.from(ids, (id) => deleteSubject(id)));
     ids.forEach((id) => {
       const subject = subjects.find((s) => s.subject_id === id);
       if (subject) {
@@ -59,7 +58,8 @@ export function useSubjects() {
         });
       }
     });
-  }, [subjects, addActivity]);
+    refetch();
+  }, [subjects, addActivity, refetch]);
 
   const restoreSubjects = useCallback((ids: Set<string>) => {
     ids.forEach((id) => {

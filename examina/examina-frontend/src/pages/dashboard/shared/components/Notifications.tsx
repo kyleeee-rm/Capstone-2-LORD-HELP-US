@@ -47,14 +47,14 @@ export default function Notifications() {
 	const [open, setOpen] = useState(false);
 
 	return (
-		<div className="flex flex-col gap-4 pt-4 pb-20">
+		<div className="mx-auto flex w-full max-w-3xl flex-col gap-4 pt-4">
 			{notifications.length === 0 ? (
 				<Item variant="muted" size="sm">
 					<ItemMedia>
 						<Bell className="size-5 text-muted-foreground" />
 					</ItemMedia>
 					<ItemContent>
-						<ItemTitle className="text-text-muted justify-center">
+						<ItemTitle className="text-muted-foreground justify-center">
 							No notifications
 						</ItemTitle>
 					</ItemContent>
@@ -65,11 +65,11 @@ export default function Notifications() {
 						<div key={n.id}>
 							<Item variant="default" size="xs">
 								<ItemContent>
-									<ItemTitle className="text-text font-semibold">
+									<ItemTitle className="text-foreground font-semibold">
 										{n.title}
 									</ItemTitle>
 									<ItemDescription>{n.description}</ItemDescription>
-									<Label className="text-xs text-text-muted">{n.time}</Label>
+									<Label className="text-xs text-muted-foreground">{n.time}</Label>
 								</ItemContent>
 								<ItemActions>
 									<DropdownMenu>

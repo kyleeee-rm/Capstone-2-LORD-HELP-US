@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -36,12 +36,6 @@ export default function EditModal({
   const [hours, setHours] = useState(teachingHours);
   const [minutes, setMinutes] = useState(teachingMinutes);
   const [bloomsState, setBloomsState] = useState(blooms);
-
-  useEffect(() => {
-    setHours(teachingHours);
-    setMinutes(teachingMinutes);
-    setBloomsState(blooms);
-  }, [teachingHours, teachingMinutes, blooms]);
 
   const total = bloomsState.reduce((sum, b) => sum + b.value, 0);
 
@@ -92,7 +86,7 @@ export default function EditModal({
               {bloomsState.map((b, i) => (
                 <div key={b.name} className="flex items-center gap-2">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
-                  <span className="w-20 text-xs font-medium text-text">{b.name}</span>
+                  <span className="w-20 text-xs font-medium text-foreground">{b.name}</span>
                   <input
                     type="range"
                     min={0}
@@ -102,7 +96,7 @@ export default function EditModal({
                     className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-border accent-current"
                     style={{ accentColor: b.color }}
                   />
-                  <span className="w-8 text-right text-xs font-medium text-text">{b.value}%</span>
+                  <span className="w-8 text-right text-xs font-medium text-foreground">{b.value}%</span>
                 </div>
               ))}
             </div>

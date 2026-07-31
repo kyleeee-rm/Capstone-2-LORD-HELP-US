@@ -11,7 +11,8 @@ export type AuthUser = {
 type AuthState = {
   user: AuthUser | null;
   token: string | null;
-  setAuth: (user: AuthUser, token: string) => void;
+  expiresAt: number | null;
+  setAuth: (user: AuthUser, token: string, expiresInSeconds?: number) => void;
   logout: () => void;
 };
 
@@ -20,9 +21,18 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
-      setAuth: (user, token) => set({ user, token }),
-      logout: () => set({ user: null, token: null }),
+      expiresAt: null,
+      setAuth: (user, token, expiresInSeconds) =>
+        set({
+          user,
+          token,
+          expiresAt:
+            typeof expiresInSeconds === "number"
+              ? Date.now() + expiresInSeconds * 1000
+              : null,
+        }),
+      logout: () => set({ user: null, token: null, expiresAt: null }),
     }),
-    { name: "auth-storage" }
+    { name: "auth-storage", version: 1 }
   )
 );

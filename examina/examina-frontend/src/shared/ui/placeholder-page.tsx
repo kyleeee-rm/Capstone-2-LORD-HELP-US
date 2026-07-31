@@ -14,7 +14,7 @@ export default function PlaceholderPage({
 	const navigate = useNavigate();
 
 	return (
-		<div className="flex flex-col gap-4 pb-20">
+		<div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
 			{showBackButton && (
 				<div className="flex items-center gap-3">
 					<Button
@@ -22,15 +22,15 @@ export default function PlaceholderPage({
 						size="icon-sm"
 						onClick={() => navigate(-1)}
 						aria-label="Back">
-						<ArrowLeft className="h-5 w-5" />
+						<ArrowLeft className="size-5" />
 					</Button>
-					<h1 className="text-2xl font-bold text-text">{title}</h1>
+					<h1 className="text-2xl font-bold text-foreground">{title}</h1>
 				</div>
 			)}
 			{!showBackButton && (
-				<h1 className="text-2xl font-bold text-text">{title}</h1>
+				<h1 className="text-2xl font-bold text-foreground">{title}</h1>
 			)}
-			<p className="text-sm text-text-muted">This page is under construction.</p>
+			<p className="text-sm text-muted-foreground">This page is under construction.</p>
 		</div>
 	);
 }
