@@ -1,7 +1,6 @@
 import {useNavigate} from "react-router-dom";
-import {AspectRatio} from "@/components/ui/aspect-ratio";
-import {Button} from "@/components/ui/button";
-import {Label} from "@/components/ui/label";
+import {AspectRatio} from "@/shared/ui/aspect-ratio";
+import {Button} from "@/shared/ui/button";
 import examinaLogo from "@/assets/examina-logo.png";
 
 export default function Welcome() {
@@ -15,9 +14,9 @@ export default function Welcome() {
 
 			<h1 className="text-3xl font-bold text-text mb-2">Welcome to Examina</h1>
 
-			<Label className="text-sm text-text-muted font-normal text-center max-w-xs">
+			<p className="text-sm text-text-muted text-center max-w-xs">
 				Create an account to start making your assessment workflow simpler.
-			</Label>
+			</p>
 
 			<div className="flex-1" />
 
@@ -28,7 +27,7 @@ export default function Welcome() {
 				Get Started
 			</Button>
 
-			<Label className="mt-4 text-sm text-text-muted font-normal">
+			<p className="mt-4 text-sm text-text-muted">
 				Already have an account?{" "}
 				<Button
 					variant="link"
@@ -36,7 +35,7 @@ export default function Welcome() {
 					onClick={() => navigate("/login")}>
 					Sign in
 				</Button>
-			</Label>
+			</p>
 		</div>
 	);
 }
