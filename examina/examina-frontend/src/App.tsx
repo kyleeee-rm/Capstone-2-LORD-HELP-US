@@ -1,6 +1,12 @@
 // src/App.tsx
-import AppRouter from "./routes/AppRouter";
+import AppRouter from './app/routes';
+import { Toaster } from '@/shared/ui/toast';
 
 export default function App() {
-  return <AppRouter />;
+	return (
+		<>
+			<AppRouter />
+			<Toaster />
+		</>
+	);
 }

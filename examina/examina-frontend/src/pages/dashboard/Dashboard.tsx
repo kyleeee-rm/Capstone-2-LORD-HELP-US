@@ -1,67 +1,71 @@
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
-import examGen from "../../assets/gen-img.png";
-import ansScan from "../../assets/check-img.png";
-import itemAna from "../../assets/analy-img.png";
+import {format} from "date-fns";
+import {Link} from "react-router-dom";
+import {useAuthStore} from "@/shared/stores";
+import {Button} from "@/shared/ui/button";
+import {getGreeting} from "./dashboard-utils";
+import RecentActivities from "./components/RecentActivities";
+import questionImg from "@/assets/question.png";
+import scanImg from "@/assets/scan.png";
+import analyzeImg from "@/assets/analyze.png";
 
-const modules = [
-  {
-    title: "Exam Generation",
-    description: "Generate exam questions from your materials",
-    path: "/dashboard/questions",
-    bg: "bg-secondary",
-    image: examGen,
-  },
-  {
-    title: "Answer Sheet Scanner",
-    description: "Scan and grade answer sheets automatically",
-    path: "/dashboard/materials",
-    bg: "bg-tertiary",
-    image: ansScan,
-  },
-  {
-    title: "Item Analysis",
-    description: "Analyze question performance and difficulty",
-    path: "/dashboard/analysis",
-    bg: "bg-primary",
-    image: itemAna,
-  },
-];
+const FEATURES = [
+	{
+		to: "/dashboard/questions-generation",
+		title: "Question Generation",
+		image: questionImg,
+		className: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+	},
+	{
+		to: "/dashboard/sheet-scanning",
+		title: "Sheet Scanning",
+		image: scanImg,
+		className: "bg-tertiary text-white hover:bg-tertiary/80",
+	},
+	{
+		to: "/dashboard/analysis",
+		title: "Item Analysis",
+		image: analyzeImg,
+		className: "bg-quaternary text-white hover:bg-quaternary/80",
+	},
+] as const;
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const name = user?.first_name ?? "User";
-  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+	const user = useAuthStore((s) => s.user);
 
-  return (
-    <div className="pb-20 md:pb-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">{greeting}, {name}!</h1>
-        <p className="text-sm text-text-muted">Your next assessment is just a few clicks away</p>
-      </div>
+	return (
+		<div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+			<div className="flex flex-col gap-1">
+				<h1 className="font-heading text-2xl font-semibold tracking-tight">
+					{getGreeting()}, {user?.first_name ?? "User"}!
+				</h1>
+				<p className="text-sm text-muted-foreground">
+					{format(new Date(), "EEEE, MMMM d")} · Your next assessment is just a
+					few clicks away
+				</p>
+			</div>
 
-      <div className="flex flex-col gap-4">
-        {modules.map((mod) => (
-          <button
-            key={mod.path}
-            onClick={() => navigate(mod.path)}
-            className={`relative flex cursor-pointer items-center overflow-hidden rounded-xl px-5 py-7 text-left text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg ${mod.bg}`}
-          >
-            <h2 className="relative z-10 w-3/5 text-lg font-bold">{mod.title}</h2>
-            <img
-              src={mod.image}
-              alt=""
-              className="pointer-events-none absolute right-0 bottom-0 h-full w-2/5 object-contain object-right-bottom"
-            />
-          </button>
-        ))}
-      </div>
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				{FEATURES.map((feature) => (
+					<Button
+						key={feature.to}
+						render={<Link to={feature.to} />}
+						nativeButton={false}
+						aria-label={`Open ${feature.title}`}
+						className={`${feature.className} w-full rounded-2xl h-auto min-h-20 md:min-h-36 shadow-sm pl-5 sm:pl-6 pr-0 overflow-hidden`}>
+						<span className="min-w-0 flex-1 text-base sm:text-lg lg:text-xl font-semibold text-left leading-snug">
+							{feature.title}
+						</span>
+						<img
+							src={feature.image}
+							alt=""
+							aria-hidden="true"
+							className="h-full w-24 sm:w-32 md:w-full md:max-w-52 shrink-0 self-stretch object-cover"
+						/>
+					</Button>
+				))}
+			</div>
 
-      <div className="mt-8">
-        <h2 className="mb-3 text-lg font-bold text-text">Recent activities</h2>
-        <p className="text-sm text-text-muted">No recent activities.</p>
-      </div>
-    </div>
-  );
+			<RecentActivities />
+		</div>
+	);
 }
