@@ -54,7 +54,7 @@ import {useSubjectStore} from "./subject-store";
 import type {Subject, SubjectCreate, YearLevel} from "@/shared/types/domain";
 
 function getDetailsHref(subjectId: string): string {
-	return `/dashboard/questions-generation/${subjectId}/details`;
+	return `/dashboard/questions-generation/${subjectId}`;
 }
 
 const YEAR_LEVELS: YearLevel[] = [

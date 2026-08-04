@@ -41,6 +41,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 		set({loading: true, error: null});
 		try {
 			const subjects = await getSubjects();
+			console.log("Fetched subjects:", subjects);
 			const fileCounts: Record<string, number> = {};
 			for (const subject of subjects) {
 				fileCounts[subject.subject_id] = mockFileCount(subject.subject_id);

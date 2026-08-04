@@ -53,6 +53,14 @@ export default function AppRouter() {
 							path="questions-generation"
 							element={<QuestionGeneration />}
 						/>
+						<Route
+							path="questions-generation/:subjectId"
+							element={<SubjectFolder />}
+						/>
+						<Route
+							path="questions-generation/:subjectId/folders/:folderId"
+							element={<SubjectFolder />}
+						/>
 						<Route path="sheet-scanning" element={<SheetScanning />} />
 						<Route path="analysis" element={<ItemAnalysis />} />
 						<Route path="search" element={<Search />} />

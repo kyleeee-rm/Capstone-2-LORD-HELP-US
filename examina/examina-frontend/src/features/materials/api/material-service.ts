@@ -14,9 +14,21 @@ export type MaterialStatusResponse = {
   progress?: number;
 };
 
-export async function getMaterials(folderId: string, signal?: AbortSignal): Promise<MaterialListItem[]> {
-  const res = await api.get<MaterialListItem[]>(`/folders/${folderId}/materials`, { signal });
-  return res.data;
+type MaterialsResponse = {
+  materials: MaterialListItem[];
+};
+
+export async function getMaterials(
+  folderId: string,
+  signal?: AbortSignal,
+): Promise<MaterialListItem[]> {
+
+  const res = await api.get<MaterialsResponse>(
+    `/subject-folders/${folderId}/materials`,
+    { signal }
+  );
+
+  return res.data.materials;
 }
 
 export async function uploadMaterial(
@@ -31,7 +43,8 @@ export async function uploadMaterial(
   formData.append('description', meta.description);
   formData.append('teaching_hours', String(meta.teaching_hours));
 
-  const res = await api.post<MaterialUploadResponse>(`/folders/${folderId}/materials`, formData, {
+  const res = await api.post(
+  `/subject-folders/${folderId}/materials`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (e) => {
       if (e.total && onProgress) {
@@ -42,7 +55,13 @@ export async function uploadMaterial(
   return res.data;
 }
 
-export async function getMaterialStatus(materialId: string): Promise<MaterialStatusResponse> {
-  const res = await api.get<MaterialStatusResponse>(`/materials/${materialId}/status`);
+export async function getMaterialStatus(
+  folderId: string,
+  materialId: string,
+): Promise<MaterialStatusResponse> {
+  const res = await api.get<MaterialStatusResponse>(
+    `/subject-folders/${folderId}/materials/${materialId}/status`
+  );
+
   return res.data;
 }
