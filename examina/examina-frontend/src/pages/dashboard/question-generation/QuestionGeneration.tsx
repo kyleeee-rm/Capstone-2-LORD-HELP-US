@@ -51,17 +51,24 @@ import {Field, FieldContent, FieldError, FieldLabel} from "@/shared/ui/field";
 import {toast} from "@/shared/ui/toast";
 import {parseApiError} from "@/shared/lib/parse-api-error";
 import {useSubjectStore} from "./subject-store";
-import type {Subject, SubjectCreate} from "@/shared/types/domain";
+import type {Subject, SubjectCreate, YearLevel} from "@/shared/types/domain";
 
 function getDetailsHref(subjectId: string): string {
 	return `/dashboard/questions-generation/${subjectId}/details`;
 }
 
+const YEAR_LEVELS: YearLevel[] = [
+	"1st Year",
+	"2nd Year",
+	"3rd Year",
+	"4th Year",
+];
+
 const EMPTY_FORM: SubjectCreate = {
 	subject_code: "",
 	subject_name: "",
 	course: "",
-	section: "",
+	year_level: "1st Year",
 	semester: "",
 	academic_year: "",
 };
@@ -117,7 +124,7 @@ export default function QuestionGeneration() {
 			subject_code: subject.subject_code,
 			subject_name: subject.subject_name,
 			course: subject.course,
-			section: subject.section,
+			year_level: subject.year_level,
 			semester: subject.semester,
 			academic_year: subject.academic_year,
 		});
@@ -351,10 +358,10 @@ export default function QuestionGeneration() {
 								{subject.course && (
 									<span className="min-w-0">
 										{subject.course}
-										{subject.section ? ` ${subject.section}` : ""}
+										{subject.year_level ? ` ${subject.year_level}` : ""}
 									</span>
 								)}
-								{(subject.course || subject.section) && (
+								{(subject.course || subject.year_level) && (
 									<span className="text-muted-foreground/50">•</span>
 								)}
 								{subject.semester && (
@@ -418,14 +425,21 @@ export default function QuestionGeneration() {
 								</FieldContent>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`${baseId}-section`}>Section</FieldLabel>
+								<FieldLabel htmlFor={`${baseId}-year-level`}>
+									Year level
+								</FieldLabel>
 								<FieldContent>
-									<Input
-										id={`${baseId}-section`}
-										value={form.section}
-										onChange={(e) => setField("section", e.target.value)}
-										placeholder="e.g. 2A"
-									/>
+									<select
+										id={`${baseId}-year-level`}
+										value={form.year_level}
+										onChange={(e) => setField("year_level", e.target.value)}
+										className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]">
+										{YEAR_LEVELS.map((level) => (
+											<option key={level} value={level}>
+												{level}
+											</option>
+										))}
+									</select>
 								</FieldContent>
 							</Field>
 							<Field>

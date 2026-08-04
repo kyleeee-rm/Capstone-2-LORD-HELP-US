@@ -25,12 +25,12 @@ services:
   backend:
     build: ./examina-backend
     volumes:
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/examina-backend/app:/app/app
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/examina-backend/alembic:/app/alembic
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/examina-backend/alembic.ini:/app/alembic.ini
+      - ./examina-backend/app:/app/app
+      - ./examina-backend/alembic:/app/alembic
+      - ./examina-backend/alembic.ini:/app/alembic.ini
       - materials_data:/app/storage
     env_file:
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/examina-backend/.env
+      - ./examina-backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://examina:examina_dev_password@db:5432/examina
       CHROMA_URL: http://chromadb:8000
@@ -45,7 +45,7 @@ services:
   frontend:
     build: ./examina-frontend
     volumes:
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/examina-frontend:/app
+      - ./examina-frontend:/app
       - frontend_node_modules:/app/node_modules
     ports:
       - "5173:5173"
@@ -55,7 +55,7 @@ services:
   nginx:
     image: nginx:alpine
     volumes:
-      - /home/matt/Capstone-2-LORD-HELP-US/examina/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
     depends_on:
