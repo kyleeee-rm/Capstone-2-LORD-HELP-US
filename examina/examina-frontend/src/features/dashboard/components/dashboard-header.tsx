@@ -142,7 +142,7 @@ export default function DashboardHeader() {
 							variant="ghost"
 							size="icon"
 							aria-label="Search"
-							render={<Link to="/dashboard/search" />}>
+							onClick={() => navigate("/dashboard/search")}>
 							<Search className="size-6" />
 						</Button>
 					) : (
@@ -172,13 +172,12 @@ export default function DashboardHeader() {
 							</Link>
 						)}
 					</div>
-
 					<Button
 						variant="ghost"
 						size="icon"
 						aria-label="Notifications"
 						className="relative shrink-0"
-						render={<Link to="/dashboard/notifications" />}>
+						onClick={() => navigate("/dashboard/notifications")}>
 						{bellIcon}
 						<span
 							className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
