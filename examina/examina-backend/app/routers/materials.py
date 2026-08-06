@@ -309,3 +309,30 @@ def restore_material(
     return MaterialActionResponse(
         message="Material restored successfully.",
     )
+
+
+@router.delete(
+    "/{folder_id}/materials/{material_id}",
+    response_model=MaterialActionResponse,
+)
+def delete_material(
+    folder_id: uuid.UUID,
+    material_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: Faculty = Depends(get_current_user),
+):
+    material = _get_owned_material(
+        db=db,
+        folder_id=folder_id,
+        material_id=material_id,
+        faculty=current_user,
+    )
+
+    MaterialService.delete_material(
+        db=db,
+        material=material,
+    )
+
+    return MaterialActionResponse(
+        message="Material deleted successfully.",
+    )
