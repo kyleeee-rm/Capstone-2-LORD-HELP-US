@@ -49,3 +49,9 @@ class MaterialStatusResponse(BaseModel):
     id: uuid.UUID
     status: str
     progress_pct: int
+
+
+class MaterialActionResponse(BaseModel):
+    """Generic response for archive/restore actions."""
+
+    message: str

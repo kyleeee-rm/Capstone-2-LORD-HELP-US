@@ -3,18 +3,18 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile, status
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-
-from app.models.material_chunk import MaterialChunk
 
 from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.deps import get_current_user
 from app.models.faculty import Faculty
 from app.models.learning_material import LearningMaterial
+from app.models.material_chunk import MaterialChunk
 from app.models.subject_folder import SubjectFolder
 from app.schemas.materials import (
+    MaterialActionResponse,
     MaterialListItem,
     MaterialListResponse,
     MaterialStatusResponse,
@@ -22,6 +22,7 @@ from app.schemas.materials import (
 )
 from app.services import storage
 from app.services.material_processing_service import process_material
+from app.services.material_service import MaterialService
 
 router = APIRouter(prefix="/subject-folders", tags=["Learning Materials"])
 
@@ -48,9 +49,29 @@ def _get_owned_folder(db: Session, folder_id: uuid.UUID, faculty: Faculty) -> Su
     return folder
 
 
+def _get_owned_material(
+    db: Session,
+    folder_id: uuid.UUID,
+    material_id: uuid.UUID,
+    faculty: Faculty,
+) -> LearningMaterial:
+    _get_owned_folder(db, folder_id, faculty)
+
+    material = db.get(LearningMaterial, material_id)
+
+    if material is None or material.folder_id != folder_id:
+        raise AppError(404, "material_not_found", "Material not found.")
+
+    if material.faculty_id != faculty.faculty_id:
+        raise AppError(404, "material_not_found", "Material not found.")
+
+    return material
+
+
 def _detect_extension(file: UploadFile) -> str | None:
     if file.content_type in ALLOWED_CONTENT_TYPES:
         return ALLOWED_CONTENT_TYPES[file.content_type]
+
     suffix = Path(file.filename or "").suffix.lower()
     return suffix if suffix in ALLOWED_EXTENSIONS else None
 
@@ -58,6 +79,7 @@ def _detect_extension(file: UploadFile) -> str | None:
 def _try_count_pages(path: Path, extension: str) -> int | None:
     if extension != ".pdf":
         return None
+
     try:
         import fitz
 
@@ -86,8 +108,13 @@ def upload_material(
     _get_owned_folder(db, folder_id, current_user)
 
     extension = _detect_extension(file)
+
     if extension is None:
-        raise AppError(400, "unsupported_file_type", "Only PDF and DOCX files are accepted.")
+        raise AppError(
+            400,
+            "unsupported_file_type",
+            "Only PDF and DOCX files are accepted.",
+        )
 
     material_id = uuid.uuid4()
 
@@ -98,8 +125,16 @@ def upload_material(
         file_obj=file.file,
     )
 
-    total_pages = _try_count_pages(storage.get_absolute_path(storage_path), extension)
-    file_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    total_pages = _try_count_pages(
+        storage.get_absolute_path(storage_path),
+        extension,
+    )
+
+    file_type = (
+        file.content_type
+        or mimetypes.guess_type(file.filename or "")[0]
+        or "application/octet-stream"
+    )
 
     material = LearningMaterial(
         material_id=material_id,
@@ -125,33 +160,55 @@ def upload_material(
         db.rollback()
         raise
 
-    background_tasks.add_task(process_material, material.material_id)
+    background_tasks.add_task(
+        process_material,
+        material.material_id,
+    )
 
     return material
 
 
-@router.get("/{folder_id}/materials", response_model=MaterialListResponse)
+@router.get(
+    "/{folder_id}/materials",
+    response_model=MaterialListResponse,
+)
 def list_materials(
     folder_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: Faculty = Depends(get_current_user),
 ):
     _get_owned_folder(db, folder_id, current_user)
+
     materials = db.scalars(
-        select(LearningMaterial).where(LearningMaterial.folder_id == folder_id)
+        select(LearningMaterial).where(
+            LearningMaterial.folder_id == folder_id,
+            LearningMaterial.is_archived.is_(False),
+        )
     ).all()
 
     chunk_counts = dict(
         db.execute(
-            select(MaterialChunk.material_id, func.count(MaterialChunk.chunk_id))
-            .where(MaterialChunk.material_id.in_([m.material_id for m in materials]))
+            select(
+                MaterialChunk.material_id,
+                func.count(MaterialChunk.chunk_id),
+            )
+            .where(
+                MaterialChunk.material_id.in_(
+                    [m.material_id for m in materials]
+                )
+            )
             .group_by(MaterialChunk.material_id)
         ).all()
     )
 
     items = [
         MaterialListItem.model_validate(m).model_copy(
-            update={"chunk_count": chunk_counts.get(m.material_id, 0)}
+            update={
+                "chunk_count": chunk_counts.get(
+                    m.material_id,
+                    0,
+                )
+            }
         )
         for m in materials
     ]
@@ -159,21 +216,96 @@ def list_materials(
     return MaterialListResponse(materials=items)
 
 
-@router.get("/{folder_id}/materials/{material_id}/status", response_model=MaterialStatusResponse)
+@router.get(
+    "/{folder_id}/materials/{material_id}/status",
+    response_model=MaterialStatusResponse,
+)
 def material_status(
     folder_id: uuid.UUID,
     material_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: Faculty = Depends(get_current_user),
 ):
-    _get_owned_folder(db, folder_id, current_user)
-
-    material = db.get(LearningMaterial, material_id)
-    if material is None or material.folder_id != folder_id:
-        raise AppError(404, "material_not_found", "Material not found.")
+    material = _get_owned_material(
+        db,
+        folder_id,
+        material_id,
+        current_user,
+    )
 
     return MaterialStatusResponse(
         id=material.material_id,
         status=material.upload_status,
-        progress_pct=STATUS_PROGRESS.get(material.upload_status, 0),
+        progress_pct=STATUS_PROGRESS.get(
+            material.upload_status,
+            0,
+        ),
+    )
+
+
+@router.patch(
+    "/{folder_id}/materials/{material_id}/archive",
+    response_model=MaterialActionResponse,
+)
+def archive_material(
+    folder_id: uuid.UUID,
+    material_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: Faculty = Depends(get_current_user),
+):
+    material = _get_owned_material(
+        db=db,
+        folder_id=folder_id,
+        material_id=material_id,
+        faculty=current_user,
+    )
+
+    if material.is_archived:
+        raise AppError(
+            400,
+            "already_archived",
+            "Material is already archived.",
+        )
+
+    MaterialService.archive_material(
+        db=db,
+        material=material,
+    )
+
+    return MaterialActionResponse(
+        message="Material archived successfully.",
+    )
+
+
+@router.patch(
+    "/{folder_id}/materials/{material_id}/restore",
+    response_model=MaterialActionResponse,
+)
+def restore_material(
+    folder_id: uuid.UUID,
+    material_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: Faculty = Depends(get_current_user),
+):
+    material = _get_owned_material(
+        db=db,
+        folder_id=folder_id,
+        material_id=material_id,
+        faculty=current_user,
+    )
+
+    if not material.is_archived:
+        raise AppError(
+            400,
+            "not_archived",
+            "Material is not archived.",
+        )
+
+    MaterialService.restore_material(
+        db=db,
+        material=material,
+    )
+
+    return MaterialActionResponse(
+        message="Material restored successfully.",
     )
