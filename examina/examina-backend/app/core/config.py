@@ -30,5 +30,7 @@ class Settings(BaseSettings):
     STORAGE_ROOT: str = "/app/storage"
     MAX_UPLOAD_SIZE_MB: int = 25
 
+    CHROMA_URL: str = "http://chromadb:8000"
+
 
 settings = Settings()

@@ -59,7 +59,7 @@ export default function SubjectFolder() {
 				action: "created",
 				type: "folder",
 				name: newFolderName.trim(),
-				href: `/subjects/${subjectId}`,
+				href: `/dashboard/questions-generation/${subjectId}`,
 			});
 			setNewFolderName("");
 			refetchFolders();
@@ -86,7 +86,7 @@ export default function SubjectFolder() {
 					action: "archived",
 					type: "folder",
 					name: folder.folder_name,
-					href: `/subjects/${subjectId}`,
+					href: `/dashboard/questions-generation/${subjectId}`,
 				});
 			setArchivedIds((prev) => new Set(prev).add(id));
 		});
@@ -101,7 +101,7 @@ export default function SubjectFolder() {
 					action: "deleted",
 					type: "folder",
 					name: folder.folder_name,
-					href: `/subjects/${subjectId}`,
+					href: `/dashboard/questions-generation/${subjectId}`,
 				});
 			setArchivedIds((prev) => {
 				const n = new Set(prev);
@@ -121,7 +121,7 @@ export default function SubjectFolder() {
 					action: "restored",
 					type: "folder",
 					name: folder.folder_name,
-					href: `/subjects/${subjectId}`,
+					href: `/dashboard/questions-generation/${subjectId}`,
 				});
 			setArchivedIds((prev) => {
 				const n = new Set(prev);
@@ -145,7 +145,7 @@ export default function SubjectFolder() {
 					action: "deleted",
 					type: "folder",
 					name: folder.folder_name,
-					href: `/subjects/${subjectId}`,
+					href: `/dashboard/questions-generation/${subjectId}`,
 				});
 		});
 		setRemovedIds((prev) => new Set([...prev, ...selectedIds]));
@@ -392,13 +392,19 @@ export default function SubjectFolder() {
 			<Breadcrumb className="mb-2">
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink render={<Link to="/subjects" />}>
+						<BreadcrumbLink
+							render={<Link to="/dashboard/questions-generation" />}>
 							Subjects
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbLink render={<Link to={`/subjects/${subjectId}`} />}>
+						<BreadcrumbLink
+							render={
+								<Link
+									to={`/dashboard/questions-generation/${subjectId}`}
+								/>
+							}>
 							{currentIsHydrating ? (
 								<Skeleton className="inline-block h-4 w-28" />
 							) : (

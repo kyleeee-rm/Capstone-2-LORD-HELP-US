@@ -1,4 +1,5 @@
 import axios from "axios";
+import api from "@/shared/api/client";
 import type {
 	Subject,
 	SubjectCreate,
@@ -6,62 +7,21 @@ import type {
 	SubjectFolder,
 } from "@/shared/types/domain";
 
-// ---------- Axios Client ----------
-const apiClient = axios.create({
-	baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
-	headers: {
-		"Content-Type": "application/json",
-	},
-});
-
-// Request interceptor for auth token (if needed)
-apiClient.interceptors.request.use(
-	(config) => {
-		const token = localStorage.getItem("access_token");
-		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
-		}
-		return config;
-	},
-	(error) => Promise.reject(error),
-);
-
-// Response interceptor for error handling
-apiClient.interceptors.response.use(
-	(response) => response,
-	(error) => {
-		// Handle 401 unauthorized (redirect to login)
-		if (error.response?.status === 401) {
-			localStorage.removeItem("access_token");
-			window.location.href = "/login";
-		}
-		return Promise.reject(error);
-	},
-);
-
 // ---------- API Functions ----------
 
-// Get all subjects with folders and materials
+// Get all subjects
 export const getSubjects = async (): Promise<Subject[]> => {
-	const response = await apiClient.get<Subject[]>("/subjects");
-	return response.data.map((subject) => ({
-		...subject,
-		description: subject.description ?? "",
-		folders: subject.folders ?? [],
-	}));
+	const response = await api.get<Subject[]>("/subjects");
+	return response.data;
 };
 
-// Get a single subject by ID with its folders and materials
+// Get a single subject by ID
 export const getSubjectById = async (
 	subjectId: string,
 ): Promise<Subject | null> => {
 	try {
-		const response = await apiClient.get<Subject>(`/subjects/${subjectId}`);
-		return {
-			...response.data,
-			description: response.data.description ?? "",
-			folders: response.data.folders ?? [],
-		};
+		const response = await api.get<Subject>(`/subjects/${subjectId}`);
+		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error) && error.response?.status === 404) {
 			return null;
@@ -74,12 +34,8 @@ export const getSubjectById = async (
 export const createSubject = async (
 	payload: SubjectCreate,
 ): Promise<Subject> => {
-	const response = await apiClient.post<Subject>("/subjects", payload);
-	return {
-		...response.data,
-		description: response.data.description ?? "",
-		folders: response.data.folders ?? [],
-	};
+	const response = await api.post<Subject>("/subjects", payload);
+	return response.data;
 };
 
 // Update an existing subject
@@ -87,17 +43,13 @@ export const updateSubject = async (
 	id: string,
 	payload: SubjectUpdate,
 ): Promise<Subject> => {
-	const response = await apiClient.put<Subject>(`/subjects/${id}`, payload);
-	return {
-		...response.data,
-		description: response.data.description ?? "",
-		folders: response.data.folders ?? [],
-	};
+	const response = await api.put<Subject>(`/subjects/${id}`, payload);
+	return response.data;
 };
 
 // Delete a subject
 export const deleteSubject = async (id: string): Promise<void> => {
-	await apiClient.delete(`/subjects/${id}`);
+	await api.delete(`/subjects/${id}`);
 };
 
 // Create a new folder inside a subject
@@ -106,18 +58,14 @@ export const createFolder = async (
 	folderName: string,
 	description?: string,
 ): Promise<SubjectFolder> => {
-	const response = await apiClient.post<SubjectFolder>(
+	const response = await api.post<SubjectFolder>(
 		`/subjects/${subjectId}/folders`,
 		{
 			folder_name: folderName,
 			description,
 		},
 	);
-	return {
-		...response.data,
-		description: response.data.description ?? "",
-		materials: response.data.materials ?? [],
-	};
+	return response.data;
 };
 
 // Get a specific folder with its materials
@@ -126,14 +74,10 @@ export const getFolderById = async (
 	folderId: string,
 ): Promise<SubjectFolder | null> => {
 	try {
-		const response = await apiClient.get<SubjectFolder>(
+		const response = await api.get<SubjectFolder>(
 			`/subjects/${subjectId}/folders/${folderId}`,
 		);
-		return {
-			...response.data,
-			description: response.data.description ?? "",
-			materials: response.data.materials ?? [],
-		};
+		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error) && error.response?.status === 404) {
 			return null;
@@ -148,15 +92,11 @@ export const updateFolder = async (
 	folderId: string,
 	payload: {folder_name: string; description?: string},
 ): Promise<SubjectFolder> => {
-	const response = await apiClient.put<SubjectFolder>(
+	const response = await api.put<SubjectFolder>(
 		`/subjects/${subjectId}/folders/${folderId}`,
 		payload,
 	);
-	return {
-		...response.data,
-		description: response.data.description ?? "",
-		materials: response.data.materials ?? [],
-	};
+	return response.data;
 };
 
 // Delete a folder
@@ -164,7 +104,7 @@ export const deleteFolder = async (
 	subjectId: string,
 	folderId: string,
 ): Promise<void> => {
-	await apiClient.delete(`/subjects/${subjectId}/folders/${folderId}`);
+	await api.delete(`/subjects/${subjectId}/folders/${folderId}`);
 };
 
 // Upload a file to a folder
@@ -177,7 +117,7 @@ export const uploadFile = async (
 	const formData = new FormData();
 	formData.append("file", file);
 
-	const response = await apiClient.post<{
+	const response = await api.post<{
 		id: string;
 		name: string;
 		size: string;
@@ -204,7 +144,7 @@ export const deleteFile = async (
 	folderId: string,
 	fileId: string,
 ): Promise<void> => {
-	await apiClient.delete(
+	await api.delete(
 		`/subjects/${subjectId}/folders/${folderId}/files/${fileId}`,
 	);
 };
@@ -215,33 +155,28 @@ export const generateQuestions = async (
 	folderId: string,
 	payload: {count: number; difficulty?: string; topics?: string[]},
 ): Promise<{jobId: string; status: string}> => {
-	const response = await apiClient.post<{jobId: string; status: string}>(
+	const response = await api.post<{jobId: string; status: string}>(
 		`/subjects/${subjectId}/folders/${folderId}/generate`,
 		payload,
 	);
 	return response.data;
 };
 
+type GeneratedQuestion = {
+	id: string;
+	text: string;
+	status: "active" | "archived";
+	createdAt: string;
+};
+
 // Get generated questions for a folder
 export const getGeneratedQuestions = async (
 	subjectId: string,
 	folderId: string,
-): Promise<
-	Array<{
-		id: string;
-		text: string;
-		status: "active" | "archived";
-		createdAt: string;
-	}>
-> => {
-	const response = await apiClient.get<
-		Array<{
-			id: string;
-			text: string;
-			status: "active" | "archived";
-			createdAt: string;
-		}>
-	>(`/subjects/${subjectId}/folders/${folderId}/questions`);
+): Promise<GeneratedQuestion[]> => {
+	const response = await api.get<GeneratedQuestion[]>(
+		`/subjects/${subjectId}/folders/${folderId}/questions`,
+	);
 	return response.data;
 };
 
@@ -251,18 +186,8 @@ export const updateQuestion = async (
 	folderId: string,
 	questionId: string,
 	payload: {text: string; status?: "active" | "archived"},
-): Promise<{
-	id: string;
-	text: string;
-	status: "active" | "archived";
-	createdAt: string;
-}> => {
-	const response = await apiClient.put<{
-		id: string;
-		text: string;
-		status: "active" | "archived";
-		createdAt: string;
-	}>(
+): Promise<GeneratedQuestion> => {
+	const response = await api.put<GeneratedQuestion>(
 		`/subjects/${subjectId}/folders/${folderId}/questions/${questionId}`,
 		payload,
 	);
@@ -275,7 +200,7 @@ export const deleteQuestion = async (
 	folderId: string,
 	questionId: string,
 ): Promise<void> => {
-	await apiClient.delete(
+	await api.delete(
 		`/subjects/${subjectId}/folders/${folderId}/questions/${questionId}`,
 	);
 };

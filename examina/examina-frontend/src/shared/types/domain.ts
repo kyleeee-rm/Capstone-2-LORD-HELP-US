@@ -1,9 +1,11 @@
+export type YearLevel = "1st Year" | "2nd Year" | "3rd Year" | "4th Year";
+
 export type Subject = {
 	subject_id: string;
 	subject_code: string;
 	subject_name: string;
 	course: string;
-	section: string;
+	year_level: YearLevel;
 	semester: string;
 	academic_year: string;
 };
@@ -12,7 +14,7 @@ export type SubjectCreate = {
 	subject_code: string;
 	subject_name: string;
 	course: string;
-	section: string;
+	year_level: YearLevel;
 	semester: string;
 	academic_year: string;
 };
@@ -23,13 +25,11 @@ export type SubjectFolder = {
 	folder_id: string;
 	subject_id: string;
 	folder_name: string;
-	description?: string;
 };
 
 export type SubjectFolderCreate = {
 	subject_id: string;
 	folder_name: string;
-	description?: string;
 };
 
 export type MaterialListItem = {

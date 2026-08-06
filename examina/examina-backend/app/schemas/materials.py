@@ -32,8 +32,7 @@ class MaterialListItem(BaseModel):
     filename: str = Field(validation_alias="file_name")
     lesson_label: str | None = None
     status: str = Field(validation_alias="upload_status")
-    # Always 0 until Week 4's MaterialChunks table exists to count against.
-    chunk_count: int = 0
+    chunk_count: int = 0  # Overridden by the router with a real count from material_chunks.
     uploaded_at: datetime
 
 

@@ -3,8 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSubjectStore } from "../subject-store";
 import type { SubjectFolder } from "@/shared/types/domain";
 
-export function getFolderHref(subjectId: string, folderId: string): string {
-  return `/subjects/${subjectId}/folders/${folderId}`;
+export function getFolderHref(subjectId: string, folderId: string) {
+    return `/dashboard/questions-generation/${subjectId}/folders/${folderId}`;
 }
 
 export function useFolderDetail(folders: SubjectFolder[], foldersLoading: boolean) {
@@ -28,7 +28,9 @@ export function useFolderDetail(folders: SubjectFolder[], foldersLoading: boolea
 
   useEffect(() => {
     if (folderId && !foldersLoading && folders.length > 0 && !selectedFolder) {
-      navigate(`/subjects/${subjectId ?? ""}`, { replace: true });
+      navigate(`/dashboard/questions-generation/${subjectId ?? ""}`, {
+    replace: true,
+    });
     }
   }, [folderId, foldersLoading, folders.length, selectedFolder, subjectId, navigate]);
 

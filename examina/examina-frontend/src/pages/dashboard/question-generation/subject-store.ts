@@ -41,6 +41,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 		set({loading: true, error: null});
 		try {
 			const subjects = await getSubjects();
+			console.log("Fetched subjects:", subjects);
 			const fileCounts: Record<string, number> = {};
 			for (const subject of subjects) {
 				fileCounts[subject.subject_id] = mockFileCount(subject.subject_id);
@@ -54,14 +55,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 	addSubject: async (payload) => {
 		const created = await createSubject(payload);
 		set((s) => ({
-			subjects: [
-				{
-					...created,
-					description: payload.description ?? "",
-					folders: [],
-				},
-				...s.subjects,
-			],
+			subjects: [created, ...s.subjects],
 			fileCounts: {
 				...s.fileCounts,
 				[created.subject_id]: mockFileCount(created.subject_id),
@@ -79,13 +73,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 		const updated = await updateSubject(id, payload);
 		set((s) => ({
 			subjects: s.subjects.map((subject) =>
-				subject.subject_id === id
-					? {
-							...subject,
-							...updated,
-							description: updated.description ?? subject.description,
-						}
-					: subject,
+				subject.subject_id === id ? {...subject, ...updated} : subject,
 			),
 		}));
 		useActivityStore.getState().addActivity({

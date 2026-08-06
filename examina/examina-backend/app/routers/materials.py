@@ -2,9 +2,11 @@ import mimetypes
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile, status
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
+
+from app.models.material_chunk import MaterialChunk
 
 from app.core.exceptions import AppError
 from app.db.session import get_db
@@ -13,11 +15,13 @@ from app.models.faculty import Faculty
 from app.models.learning_material import LearningMaterial
 from app.models.subject_folder import SubjectFolder
 from app.schemas.materials import (
+    MaterialListItem,
     MaterialListResponse,
     MaterialStatusResponse,
     MaterialUploadResponse,
 )
 from app.services import storage
+from app.services.material_processing_service import process_material
 
 router = APIRouter(prefix="/subject-folders", tags=["Learning Materials"])
 
@@ -70,6 +74,7 @@ def _try_count_pages(path: Path, extension: str) -> int | None:
 )
 def upload_material(
     folder_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form(...),
     description: str = Form(...),
@@ -120,6 +125,8 @@ def upload_material(
         db.rollback()
         raise
 
+    background_tasks.add_task(process_material, material.material_id)
+
     return material
 
 
@@ -133,7 +140,23 @@ def list_materials(
     materials = db.scalars(
         select(LearningMaterial).where(LearningMaterial.folder_id == folder_id)
     ).all()
-    return MaterialListResponse(materials=materials)
+
+    chunk_counts = dict(
+        db.execute(
+            select(MaterialChunk.material_id, func.count(MaterialChunk.chunk_id))
+            .where(MaterialChunk.material_id.in_([m.material_id for m in materials]))
+            .group_by(MaterialChunk.material_id)
+        ).all()
+    )
+
+    items = [
+        MaterialListItem.model_validate(m).model_copy(
+            update={"chunk_count": chunk_counts.get(m.material_id, 0)}
+        )
+        for m in materials
+    ]
+
+    return MaterialListResponse(materials=items)
 
 
 @router.get("/{folder_id}/materials/{material_id}/status", response_model=MaterialStatusResponse)
