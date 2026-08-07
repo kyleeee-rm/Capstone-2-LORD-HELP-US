@@ -1,6 +1,6 @@
 import {useEffect, useId, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
-import {Edit, Folder, MoreHorizontal, Plus, Search, Trash2} from "lucide-react";
+import {Archive, Edit, Folder, MoreHorizontal, Plus, Search, Trash2} from "lucide-react";
 import {Button} from "@/shared/ui/button";
 import {Input} from "@/shared/ui/input";
 import {
@@ -85,6 +85,7 @@ export default function QuestionGeneration() {
 		fetchSubjects,
 		addSubject,
 		editSubject,
+		archiveSubjectAction,
 		removeSubject,
 	} = useSubjectStore();
 
@@ -181,6 +182,23 @@ export default function QuestionGeneration() {
 				description: parseApiError(err),
 			});
 			setDeleting(null);
+		}
+	};
+
+	const handleArchive = async (subject: Subject) => {
+		try {
+			await archiveSubjectAction(subject.subject_id);
+			toast.add({
+				type: "success",
+				title: "Subject archived",
+				description: `${subject.subject_name} has been archived.`,
+			});
+		} catch (err) {
+			toast.add({
+				type: "error",
+				title: "Archive failed",
+				description: parseApiError(err),
+			});
 		}
 	};
 
@@ -335,6 +353,11 @@ export default function QuestionGeneration() {
 											<DropdownMenuItem onClick={() => openEdit(subject)}>
 												<Edit className="size-4" />
 												Edit
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => void handleArchive(subject)}>
+												<Archive className="size-4" />
+												Archive
 											</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem

@@ -47,6 +47,16 @@ export const updateSubject = async (
 	return response.data;
 };
 
+//archive a subject
+export const archiveSubject = async (id: string): Promise<void> => {
+	await api.patch(`/subjects/${id}/archive`);
+};
+
+//restore a subject
+export const restoreSubject = async (id: string): Promise<void> => {
+	await api.patch(`/subjects/${id}/restore`);
+};
+
 // Delete a subject
 export const deleteSubject = async (id: string): Promise<void> => {
 	await api.delete(`/subjects/${id}`);

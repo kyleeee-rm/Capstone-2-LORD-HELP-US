@@ -3,6 +3,8 @@ import {
 	getSubjects,
 	createSubject,
 	updateSubject,
+	archiveSubject,
+	restoreSubject,
 	deleteSubject,
 } from "@/features/subjects/api/subject-service";
 import {useActivityStore} from "@/shared/stores";
@@ -28,6 +30,7 @@ type SubjectState = {
 	fetchSubjects: () => Promise<void>;
 	addSubject: (payload: SubjectCreate) => Promise<void>;
 	editSubject: (id: string, payload: SubjectUpdate) => Promise<void>;
+	archiveSubjectAction: (id: string) => Promise<void>;
 	removeSubject: (id: string) => Promise<void>;
 };
 
@@ -82,6 +85,24 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 			name: `${updated.subject_code} - ${updated.subject_name}`,
 			href: `/subjects/${id}`,
 		});
+	},
+
+	archiveSubjectAction: async (id) => {
+		const subject = get().subjects.find((s) => s.subject_id === id);
+		await archiveSubject(id);
+		set((s) => ({
+			subjects: s.subjects.filter((subject) => subject.subject_id !== id),
+			fileCounts: Object.fromEntries(
+				Object.entries(s.fileCounts).filter(([key]) => key !== id),
+			),
+		}));
+		if (subject) {
+			useActivityStore.getState().addActivity({
+				action: "archived",
+				type: "subject",
+				name: `${subject.subject_code} - ${subject.subject_name}`,
+			});
+		}
 	},
 
 	removeSubject: async (id) => {
