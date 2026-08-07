@@ -33,8 +33,18 @@ class SubjectService:
         return db.get(Subject, subject_id)
 
     @staticmethod
-    def get_all_subjects(db: Session) -> list[Subject]:
-        return list(db.scalars(select(Subject)).all())
+    def get_all_subjects(
+        db: Session,
+        archived: bool = False,
+    ) -> list[Subject]:
+        return list(
+            db.scalars(
+                select(Subject).where(
+                    Subject.is_archived == archived
+                )
+            ).all()
+    )
+    
 
     @staticmethod
     def update_subject(
@@ -46,6 +56,30 @@ class SubjectService:
 
         for field, value in update_data.items():
             setattr(subject, field, value)
+
+        db.commit()
+        db.refresh(subject)
+
+        return subject
+
+    @staticmethod
+    def archive_subject(
+        db: Session,
+        subject: Subject,
+    ) -> Subject:
+        subject.is_archived = True
+
+        db.commit()
+        db.refresh(subject)
+
+        return subject
+
+    @staticmethod
+    def restore_subject(
+        db: Session,
+        subject: Subject,
+    ) -> Subject:
+        subject.is_archived = False
 
         db.commit()
         db.refresh(subject)
