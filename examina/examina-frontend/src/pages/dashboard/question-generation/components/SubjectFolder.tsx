@@ -1,9 +1,8 @@
-import {Link, useNavigate} from "react-router-dom";
-import {useState} from "react";
+import {Link, useNavigate, useParams} from "react-router-dom";
+import {useState, useEffect, useRef} from "react";
 import {createFolder} from "@/features/subjects/api/subject-folder-service";
 import {useSubjectFolders} from "@/features/subjects";
 import {useActivityStore} from "@/shared/stores";
-import {useSelectMode} from "@/shared/hooks";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -13,28 +12,32 @@ import {
 	BreadcrumbSeparator,
 } from "@/shared/ui/breadcrumb";
 import {Skeleton} from "@/shared/ui/skeleton";
+import {Button} from "@/shared/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/shared/ui/select";
+import {FolderPlus, Plus} from "lucide-react";
 import {getFolderHref, useFolderDetail} from "../hooks/use-folder-detail";
 import {UploadTab} from "./UploadTab";
 import {GeneratedQuestions} from "./GeneratedQuestions";
 
-type FolderTab = "folders" | "archived" | "trash";
-
 export default function SubjectFolder() {
 	const navigate = useNavigate();
+	const [activeTab, setActiveTab] = useState<"materials" | "questions">("materials");
 	const [newFolderName, setNewFolderName] = useState("");
-	const [activeTab, setActiveTab] = useState<"materials" | "questions">(
-		"materials",
-	);
-	const [folderTab, setFolderTab] = useState<FolderTab>("folders");
-	const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
-	const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-	const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
-	const {selectMode, setSelectMode, selectedIds, toggleSelect, clearSelection} =
-		useSelectMode();
+	const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+	const isCreatingFolder = useRef(false);
+
 	const addActivity = useActivityStore((s) => s.addActivity);
 
 	const {subjectId, folderId, subjectName, isSubjectHydrating, selectedFolder} =
 		useFolderDetail([], false);
+
 	const {
 		folders,
 		loading: foldersLoading,
@@ -44,14 +47,39 @@ export default function SubjectFolder() {
 
 	const detailState = useFolderDetail(folders, foldersLoading);
 	const currentSubjectName = detailState.subjectName ?? subjectName;
-	const currentIsHydrating =
-		detailState.isSubjectHydrating || isSubjectHydrating;
-	const currentFolder = detailState.selectedFolder ?? selectedFolder;
+	const currentIsHydrating = detailState.isSubjectHydrating || isSubjectHydrating;
 
-	const handleCreateFolder = async () => {
+	// Automatically ensure at least one default folder exists for this subject
+	useEffect(() => {
+		if (
+			!foldersLoading &&
+			subjectId &&
+			folders.length === 0 &&
+			!isCreatingFolder.current
+		) {
+			isCreatingFolder.current = true;
+			void createFolder({
+				subject_id: subjectId,
+				folder_name: "General Materials",
+			})
+				.then(() => refetchFolders())
+				.finally(() => {
+					isCreatingFolder.current = false;
+				});
+		}
+	}, [foldersLoading, subjectId, folders.length, refetchFolders]);
+
+	// Select the active folder (either from URL param or default to the first folder)
+	const activeFolder = folderId
+		? folders.find((f) => f.folder_id === folderId)
+		: folders[0];
+
+	const activeFolderId = activeFolder?.folder_id;
+
+	const handleCreateSubFolder = async () => {
 		if (!newFolderName.trim() || !subjectId) return;
 		try {
-			await createFolder({
+			const created = await createFolder({
 				subject_id: subjectId,
 				folder_name: newFolderName.trim(),
 			});
@@ -59,370 +87,125 @@ export default function SubjectFolder() {
 				action: "created",
 				type: "folder",
 				name: newFolderName.trim(),
-				href: `/dashboard/questions-generation/${subjectId}`,
+				href: getFolderHref(subjectId, created.folder_id),
 			});
 			setNewFolderName("");
-			refetchFolders();
+			setShowNewFolderInput(false);
+			await refetchFolders();
+			navigate(getFolderHref(subjectId, created.folder_id));
 		} catch {
 			// handle error
 		}
 	};
 
-	const visibleFolders = folders.filter((f) => {
-		if (removedIds.has(f.folder_id)) return false;
-		const isArchived = archivedIds.has(f.folder_id);
-		const isDeleted = deletedIds.has(f.folder_id);
-		if (folderTab === "folders") return !isArchived && !isDeleted;
-		if (folderTab === "archived") return isArchived && !isDeleted;
-		if (folderTab === "trash") return isDeleted;
-		return false;
-	});
-
-	const handleArchive = () => {
-		selectedIds.forEach((id) => {
-			const folder = folders.find((f) => f.folder_id === id);
-			if (folder)
-				addActivity({
-					action: "archived",
-					type: "folder",
-					name: folder.folder_name,
-					href: `/dashboard/questions-generation/${subjectId}`,
-				});
-			setArchivedIds((prev) => new Set(prev).add(id));
-		});
-		clearSelection();
-	};
-
-	const handleDelete = () => {
-		selectedIds.forEach((id) => {
-			const folder = folders.find((f) => f.folder_id === id);
-			if (folder)
-				addActivity({
-					action: "deleted",
-					type: "folder",
-					name: folder.folder_name,
-					href: `/dashboard/questions-generation/${subjectId}`,
-				});
-			setArchivedIds((prev) => {
-				const n = new Set(prev);
-				n.delete(id);
-				return n;
-			});
-			setDeletedIds((prev) => new Set(prev).add(id));
-		});
-		clearSelection();
-	};
-
-	const handleRestore = () => {
-		selectedIds.forEach((id) => {
-			const folder = folders.find((f) => f.folder_id === id);
-			if (folder)
-				addActivity({
-					action: "restored",
-					type: "folder",
-					name: folder.folder_name,
-					href: `/dashboard/questions-generation/${subjectId}`,
-				});
-			setArchivedIds((prev) => {
-				const n = new Set(prev);
-				n.delete(id);
-				return n;
-			});
-			setDeletedIds((prev) => {
-				const n = new Set(prev);
-				n.delete(id);
-				return n;
-			});
-		});
-		clearSelection();
-	};
-
-	const handlePermanentDelete = () => {
-		selectedIds.forEach((id) => {
-			const folder = folders.find((f) => f.folder_id === id);
-			if (folder)
-				addActivity({
-					action: "deleted",
-					type: "folder",
-					name: folder.folder_name,
-					href: `/dashboard/questions-generation/${subjectId}`,
-				});
-		});
-		setRemovedIds((prev) => new Set([...prev, ...selectedIds]));
-		setDeletedIds((prev) => {
-			const next = new Set(prev);
-			selectedIds.forEach((id) => next.delete(id));
-			return next;
-		});
-		clearSelection();
-	};
-
-	if (!folderId) {
+	if (foldersLoading || currentIsHydrating || (!activeFolderId && folders.length === 0)) {
 		return (
-			<div className="mx-auto w-full max-w-5xl">
-				<h1 className="font-heading mb-4 text-2xl font-semibold tracking-tight text-foreground">
-					Subject Folders
-				</h1>
-
-				<div className="mb-4 flex flex-col gap-2 sm:flex-row">
-					<input
-						value={newFolderName}
-						onChange={(e) => setNewFolderName(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") void handleCreateFolder();
-						}}
-						placeholder="New folder name"
-						aria-label="New folder name"
-						className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
-					/>
-					{folderTab === "folders" && (
-						<button
-							onClick={() => void handleCreateFolder()}
-							disabled={!newFolderName.trim()}
-							className="rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50">
-							Add Folder
-						</button>
-					)}
-					{folderTab !== "folders" &&
-						!selectMode &&
-						visibleFolders.length > 0 && (
-							<button
-								onClick={() => setSelectMode(true)}
-								className="rounded-full border border-border px-6 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
-								Select
-							</button>
-						)}
-				</div>
-
-				<div className="mb-4 flex gap-2 border-b border-border">
-					{(["folders", "archived", "trash"] as FolderTab[]).map((tab) => (
-						<button
-							key={tab}
-							onClick={() => {
-								setFolderTab(tab);
-								clearSelection();
-							}}
-							className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
-								folderTab === tab
-									? "border-b-2 border-primary text-primary"
-									: "text-muted-foreground hover:text-foreground"
-							}`}>
-							{tab}
-						</button>
-					))}
-				</div>
-
-				{selectMode && (
-					<div className="mb-3 flex flex-wrap gap-2">
-						{folderTab === "archived" && (
-							<button
-								onClick={handleRestore}
-								disabled={selectedIds.size === 0}
-								className="rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50">
-								Restore ({selectedIds.size})
-							</button>
-						)}
-						{folderTab === "trash" && (
-							<>
-								<button
-									onClick={handleRestore}
-									disabled={selectedIds.size === 0}
-									className="rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50">
-									Restore ({selectedIds.size})
-								</button>
-								<button
-									onClick={handlePermanentDelete}
-									disabled={selectedIds.size === 0}
-									className="rounded-full bg-error px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-error/90 disabled:opacity-50">
-									Delete Forever ({selectedIds.size})
-								</button>
-							</>
-						)}
-						{folderTab === "folders" && (
-							<>
-								<button
-									onClick={handleArchive}
-									disabled={selectedIds.size === 0}
-									className="rounded-full bg-secondary px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-secondary/90 disabled:opacity-50">
-									Archive ({selectedIds.size})
-								</button>
-								<button
-									onClick={handleDelete}
-									disabled={selectedIds.size === 0}
-									className="rounded-full bg-error px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-error/90 disabled:opacity-50">
-									Delete ({selectedIds.size})
-								</button>
-							</>
-						)}
-						<button
-							onClick={clearSelection}
-							className="rounded-full border border-border px-6 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
-							Cancel
-						</button>
-					</div>
-				)}
-
-				<div className="flex flex-col gap-3">
-					{foldersError && (
-						<div className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-foreground">
-							<p>{foldersError}</p>
-							<button
-								onClick={() => void refetchFolders()}
-								className="mt-2 text-sm font-medium text-primary hover:underline">
-								Retry
-							</button>
-						</div>
-					)}
-					{visibleFolders.length > 0 && (
-						<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-							{visibleFolders.map((f) => (
-								<button
-									key={f.folder_id}
-									onClick={() =>
-										selectMode
-											? toggleSelect(f.folder_id)
-											: navigate(getFolderHref(subjectId!, f.folder_id))
-									}
-									className={`flex items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors ${
-										selectedIds.has(f.folder_id)
-											? "border-primary bg-primary/5"
-											: "border-border hover:border-primary"
-									}`}>
-									{selectMode && (
-										<div
-											className={`flex size-5 shrink-0 items-center justify-center rounded-md border-2 ${
-												selectedIds.has(f.folder_id)
-													? "border-primary bg-primary"
-													: "border-foreground/20"
-											}`}>
-											{selectedIds.has(f.folder_id) && (
-												<svg
-													className="size-3 text-white"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke="currentColor"
-													strokeWidth={3}>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														d="M5 13l4 4L19 7"
-													/>
-												</svg>
-											)}
-										</div>
-									)}
-									<div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-										<svg
-											className="size-5"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											strokeWidth={2}>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-											/>
-										</svg>
-									</div>
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-sm font-semibold text-foreground">
-											{f.folder_name}
-										</p>
-										{f.description && (
-											<p className="truncate text-xs text-muted-foreground">
-												{f.description}
-											</p>
-										)}
-									</div>
-									{!selectMode && (
-										<svg
-											className="size-5 shrink-0 text-muted-foreground"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											strokeWidth={2}>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												d="M9 5l7 7-7 7"
-											/>
-										</svg>
-									)}
-								</button>
-							))}
-						</div>
-					)}
-					{visibleFolders.length === 0 && folderTab === "folders" && (
-						<p className="py-12 text-center text-sm text-muted-foreground">
-							No folders yet. Create one above.
-						</p>
-					)}
-					{visibleFolders.length === 0 && folderTab === "archived" && (
-						<p className="py-12 text-center text-sm text-muted-foreground">
-							No archived folders.
-						</p>
-					)}
-					{visibleFolders.length === 0 && folderTab === "trash" && (
-						<p className="py-12 text-center text-sm text-muted-foreground">
-							Trash is empty.
-						</p>
-					)}
-				</div>
-			</div>
-		);
-	}
-
-	if (foldersLoading && !currentFolder) {
-		return (
-			<div className="mx-auto w-full max-w-5xl">
-				<div className="mb-4 flex items-center gap-2">
+			<div className="mx-auto w-full max-w-5xl flex flex-col gap-4">
+				<div className="flex items-center gap-2">
 					<Skeleton className="h-4 w-20" />
 					<Skeleton className="h-4 w-32" />
-					<Skeleton className="h-4 w-24" />
 				</div>
-				<Skeleton className="mb-4 h-8 w-48" />
+				<Skeleton className="h-8 w-48" />
 				<Skeleton className="h-64 w-full rounded-xl" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="mx-auto w-full max-w-5xl">
-			<Breadcrumb className="mb-2">
+		<div className="mx-auto w-full max-w-5xl flex flex-col gap-4">
+			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink
-							render={<Link to="/dashboard/questions-generation" />}>
+						<BreadcrumbLink render={<Link to="/dashboard/questions-generation" />}>
 							Subjects
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbLink
-							render={
-								<Link
-									to={`/dashboard/questions-generation/${subjectId}`}
-								/>
-							}>
-							{currentIsHydrating ? (
-								<Skeleton className="inline-block h-4 w-28" />
-							) : (
-								(currentSubjectName ?? subjectId)
-							)}
+						<BreadcrumbLink render={<Link to={`/dashboard/questions-generation/${subjectId}`} />}>
+							{currentSubjectName ?? subjectId}
 						</BreadcrumbLink>
 					</BreadcrumbItem>
-					<BreadcrumbSeparator />
-					<BreadcrumbItem>
-						<BreadcrumbPage>{currentFolder?.folder_name}</BreadcrumbPage>
-					</BreadcrumbItem>
+					{activeFolder && folders.length > 1 && (
+						<>
+							<BreadcrumbSeparator />
+							<BreadcrumbItem>
+								<BreadcrumbPage>{activeFolder.folder_name}</BreadcrumbPage>
+							</BreadcrumbItem>
+						</>
+					)}
 				</BreadcrumbList>
 			</Breadcrumb>
-			<h1 className="font-heading mb-2 text-2xl font-semibold tracking-tight text-foreground">
-				{currentFolder?.folder_name}
-			</h1>
 
-			<div className="mb-4 flex gap-2 border-b border-border">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+						{currentSubjectName ?? "Subject Materials"}
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						Upload learning sources and generate AI exam questions for this subject.
+					</p>
+				</div>
+
+				{/* Optional Sub-folder Selector if subject has multiple folders */}
+				<div className="flex items-center gap-2">
+					{folders.length > 1 && activeFolderId && (
+						<Select value={activeFolderId} onValueChange={(folderId) => folderId && navigate(getFolderHref(subjectId!, folderId))}>
+							<SelectTrigger className="w-48">
+								<SelectValue placeholder="Select subfolder" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectGroup>
+									{folders.map((f) => (
+										<SelectItem key={f.folder_id} value={f.folder_id}>
+											{f.folder_name}
+										</SelectItem>
+									))}
+								</SelectGroup>
+							</SelectContent>
+						</Select>
+					)}
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setShowNewFolderInput(!showNewFolderInput)}>
+						<FolderPlus className="size-4" />
+						New Subfolder
+					</Button>
+				</div>
+			</div>
+
+			{showNewFolderInput && (
+				<div className="flex gap-2 rounded-xl border border-border p-3 bg-muted/30">
+					<input
+						value={newFolderName}
+						onChange={(e) => setNewFolderName(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") void handleCreateSubFolder();
+						}}
+						placeholder="Subfolder name (e.g. Midterm Topics)"
+						className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none"
+					/>
+					<Button size="sm" variant="secondary" onClick={() => void handleCreateSubFolder()}>
+						<Plus className="size-4" />
+						Create
+					</Button>
+				</div>
+			)}
+
+			{foldersError && (
+				<div className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-foreground">
+					<p>{foldersError}</p>
+					<button
+						onClick={() => void refetchFolders()}
+						className="mt-2 text-sm font-medium text-primary hover:underline">
+						Retry
+					</button>
+				</div>
+			)}
+
+			{/* Main Content Tabs: Material Sources & Question Generation */}
+			<div className="flex gap-2 border-b border-border">
 				<button
 					onClick={() => setActiveTab("materials")}
 					className={`px-4 py-2 text-sm font-medium transition-colors ${
@@ -433,6 +216,7 @@ export default function SubjectFolder() {
 					Material Sources
 				</button>
 				<button
+					data-tab="questions"
 					onClick={() => setActiveTab("questions")}
 					className={`px-4 py-2 text-sm font-medium transition-colors ${
 						activeTab === "questions"
@@ -443,8 +227,12 @@ export default function SubjectFolder() {
 				</button>
 			</div>
 
-			{activeTab === "materials" && <UploadTab folderId={folderId} />}
-			{activeTab === "questions" && <GeneratedQuestions />}
+			{activeFolderId && (
+				<>
+					{activeTab === "materials" && <UploadTab folderId={activeFolderId} />}
+					{activeTab === "questions" && <GeneratedQuestions />}
+				</>
+			)}
 		</div>
 	);
 }

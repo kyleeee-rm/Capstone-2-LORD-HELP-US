@@ -42,8 +42,8 @@ type GeneratedQuestion = {
 
 const STATUS_STYLES: Record<QuestionStatus, string> = {
   queued: "border-border text-muted-foreground",
-  generating: "border-primary/30 bg-primary/10 text-primary",
-  ready: "",
+  generating: "border-secondary/30 bg-secondary/10 text-secondary animate-pulse",
+  ready: "border-secondary/20 bg-secondary/10 text-secondary font-medium",
 };
 
 export function GeneratedQuestions() {
@@ -86,27 +86,28 @@ export function GeneratedQuestions() {
   return (
     <div className="mt-2 flex flex-col gap-3">
       {questions.length > 0 ? (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {questions.map((q) => (
             <li
               key={q.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-4"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border bg-card p-3.5 sm:p-4 transition-colors hover:border-secondary/50"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <FileText className="size-5" aria-hidden="true" />
+                <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+                  <FileText className="size-4 sm:size-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{q.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="truncate text-xs sm:text-sm font-semibold text-foreground">{q.title}</p>
+                  <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground">
                     {q.question_count} questions · {q.difficulty} · {q.created_at}
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
                 <Badge
-                  variant={q.status === "ready" ? "default" : "outline"}
-                  className={`capitalize ${STATUS_STYLES[q.status]}`}
+                  variant="outline"
+                  className={`capitalize text-xs px-2 py-0.5 ${STATUS_STYLES[q.status]}`}
                 >
                   {q.status}
                 </Badge>
@@ -115,7 +116,7 @@ export function GeneratedQuestions() {
                     render={
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         aria-label={`Options for ${q.title}`}
                       />
                     }
@@ -146,7 +147,7 @@ export function GeneratedQuestions() {
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <FileText className="size-5" aria-hidden="true" />
+              <FileText className="size-5 text-secondary" aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>No questions generated yet</EmptyTitle>
             <EmptyDescription>
@@ -154,7 +155,7 @@ export function GeneratedQuestions() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button type="button" disabled>
+            <Button type="button" variant="secondary" disabled>
               <Zap className="size-4" />
               Generate from sources
             </Button>
@@ -163,7 +164,7 @@ export function GeneratedQuestions() {
       )}
 
       {questions.length > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] sm:text-xs text-muted-foreground">
           Questions will appear here after generation completes.
         </p>
       )}

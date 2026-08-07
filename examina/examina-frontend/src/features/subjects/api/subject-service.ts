@@ -10,8 +10,10 @@ import type {
 // ---------- API Functions ----------
 
 // Get all subjects
-export const getSubjects = async (): Promise<Subject[]> => {
-	const response = await api.get<Subject[]>("/subjects");
+export const getSubjects = async (archived?: boolean): Promise<Subject[]> => {
+	const response = await api.get<Subject[]>("/subjects", {
+		params: archived !== undefined ? { archived } : undefined,
+	});
 	return response.data;
 };
 
