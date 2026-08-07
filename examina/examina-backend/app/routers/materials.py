@@ -182,7 +182,6 @@ def list_materials(
     materials = db.scalars(
         select(LearningMaterial).where(
             LearningMaterial.folder_id == folder_id,
-            LearningMaterial.is_archived.is_(False),
         )
     ).all()
 
@@ -240,74 +239,6 @@ def material_status(
             material.upload_status,
             0,
         ),
-    )
-
-
-@router.patch(
-    "/{folder_id}/materials/{material_id}/archive",
-    response_model=MaterialActionResponse,
-)
-def archive_material(
-    folder_id: uuid.UUID,
-    material_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: Faculty = Depends(get_current_user),
-):
-    material = _get_owned_material(
-        db=db,
-        folder_id=folder_id,
-        material_id=material_id,
-        faculty=current_user,
-    )
-
-    if material.is_archived:
-        raise AppError(
-            400,
-            "already_archived",
-            "Material is already archived.",
-        )
-
-    MaterialService.archive_material(
-        db=db,
-        material=material,
-    )
-
-    return MaterialActionResponse(
-        message="Material archived successfully.",
-    )
-
-
-@router.patch(
-    "/{folder_id}/materials/{material_id}/restore",
-    response_model=MaterialActionResponse,
-)
-def restore_material(
-    folder_id: uuid.UUID,
-    material_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: Faculty = Depends(get_current_user),
-):
-    material = _get_owned_material(
-        db=db,
-        folder_id=folder_id,
-        material_id=material_id,
-        faculty=current_user,
-    )
-
-    if not material.is_archived:
-        raise AppError(
-            400,
-            "not_archived",
-            "Material is not archived.",
-        )
-
-    MaterialService.restore_material(
-        db=db,
-        material=material,
-    )
-
-    return MaterialActionResponse(
-        message="Material restored successfully.",
     )
 
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,16 +11,16 @@ from app.db.base import Base
 
 class LearningMaterial(Base):
     """Matches ERD's LearningMaterials table, with two additions the ERD
-        doesn't have — both flagged, not silently snuck in. See
-        CHANGES_MATERIALS_MODULE.md for the full rationale.
+    doesn't have — both flagged, not silently snuck in. See
+    CHANGES_MATERIALS_MODULE.md for the full rationale.
 
-        Deliberately has NO relationship() to SubjectFolder or Faculty. Those
-        models are owned by teammates and adding a relationship here requires a
-        matching back_populates on their side — get that wrong and the mapper
-        fails at first use, not at import time, which makes it a nasty bug to
-        trace. Plain FK columns only for now; add relationships later once
-        coordinated with whoever owns subject_folder.py.
-        """
+    Deliberately has NO relationship() to SubjectFolder or Faculty. Those
+    models are owned by teammates and adding a relationship here requires a
+    matching back_populates on their side — get that wrong and the mapper
+    fails at first use, not at import time, which makes it a nasty bug to
+    trace. Plain FK columns only for now; add relationships later once
+    coordinated with whoever owns subject_folder.py.
+    """
 
     __tablename__ = "learning_materials"
 
@@ -88,15 +88,6 @@ class LearningMaterial(Base):
         nullable=False,
         default="uploaded",
         server_default="uploaded",
-    )
-
-    # ADDITION (not in ERD): soft-delete flag used by the Archive feature.
-    # Archived materials remain stored and can be restored later.
-    is_archived: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default="false",
     )
 
     error_log: Mapped[str | None] = mapped_column(
