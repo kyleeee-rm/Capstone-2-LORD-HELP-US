@@ -1,12 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.learning_material import LearningMaterial
 from app.models.subject import Subject
 from app.models.subject_folder import SubjectFolder
 from app.schemas.subject_folder import (
     SubjectFolderCreate,
     SubjectFolderUpdate,
 )
+from app.services.material_service import MaterialService
 
 
 class SubjectFolderService:
@@ -68,5 +70,17 @@ class SubjectFolderService:
         db: Session,
         folder: SubjectFolder,
     ) -> None:
+        materials = db.scalars(
+            select(LearningMaterial).where(
+                LearningMaterial.folder_id == folder.folder_id,
+            )
+        ).all()
+
+        for material in materials:
+            MaterialService.delete_material(
+                db=db,
+                material=material,
+            )
+
         db.delete(folder)
         db.commit()

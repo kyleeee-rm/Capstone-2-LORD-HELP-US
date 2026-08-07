@@ -4,7 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.subject import Subject
+from app.models.subject_folder import SubjectFolder
 from app.schemas.subject import SubjectCreate, SubjectUpdate
+from app.services.subject_folder_service import SubjectFolderService
 
 
 class SubjectService:
@@ -43,8 +45,7 @@ class SubjectService:
                     Subject.is_archived == archived
                 )
             ).all()
-    )
-    
+        )
 
     @staticmethod
     def update_subject(
@@ -91,5 +92,17 @@ class SubjectService:
         db: Session,
         subject: Subject,
     ) -> None:
+        folders = db.scalars(
+            select(SubjectFolder).where(
+                SubjectFolder.subject_id == subject.subject_id,
+            )
+        ).all()
+
+        for folder in folders:
+            SubjectFolderService.delete_folder(
+                db=db,
+                folder=folder,
+            )
+
         db.delete(subject)
         db.commit()
