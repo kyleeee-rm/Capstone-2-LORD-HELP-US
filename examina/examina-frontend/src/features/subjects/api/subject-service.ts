@@ -10,8 +10,10 @@ import type {
 // ---------- API Functions ----------
 
 // Get all subjects
-export const getSubjects = async (): Promise<Subject[]> => {
-	const response = await api.get<Subject[]>("/subjects");
+export const getSubjects = async (archived?: boolean): Promise<Subject[]> => {
+	const response = await api.get<Subject[]>("/subjects", {
+		params: archived !== undefined ? { archived } : undefined,
+	});
 	return response.data;
 };
 
@@ -45,6 +47,16 @@ export const updateSubject = async (
 ): Promise<Subject> => {
 	const response = await api.put<Subject>(`/subjects/${id}`, payload);
 	return response.data;
+};
+
+//archive a subject
+export const archiveSubject = async (id: string): Promise<void> => {
+	await api.patch(`/subjects/${id}/archive`);
+};
+
+//restore a subject
+export const restoreSubject = async (id: string): Promise<void> => {
+	await api.patch(`/subjects/${id}/restore`);
 };
 
 // Delete a subject

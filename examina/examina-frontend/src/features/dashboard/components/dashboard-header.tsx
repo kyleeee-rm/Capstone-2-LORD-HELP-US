@@ -142,6 +142,7 @@ export default function DashboardHeader() {
 							variant="ghost"
 							size="icon"
 							aria-label="Search"
+							nativeButton={false}
 							render={<Link to="/dashboard/search" />}>
 							<Search className="size-6" />
 						</Button>
@@ -178,6 +179,7 @@ export default function DashboardHeader() {
 						size="icon"
 						aria-label="Notifications"
 						className="relative shrink-0"
+						nativeButton={false}
 						render={<Link to="/dashboard/notifications" />}>
 						{bellIcon}
 						<span
