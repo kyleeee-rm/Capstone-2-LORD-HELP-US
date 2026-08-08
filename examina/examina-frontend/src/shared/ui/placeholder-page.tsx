@@ -9,7 +9,7 @@ type PlaceholderPageProps = {
 
 export default function PlaceholderPage({
 	title,
-	showBackButton = true,
+	showBackButton = false,
 }: PlaceholderPageProps) {
 	const navigate = useNavigate();
 
@@ -30,7 +30,9 @@ export default function PlaceholderPage({
 			{!showBackButton && (
 				<h1 className="text-2xl font-bold text-foreground">{title}</h1>
 			)}
-			<p className="text-sm text-muted-foreground">This page is under construction.</p>
+			<p className="text-sm text-muted-foreground">
+				This page is under construction.
+			</p>
 		</div>
 	);
 }

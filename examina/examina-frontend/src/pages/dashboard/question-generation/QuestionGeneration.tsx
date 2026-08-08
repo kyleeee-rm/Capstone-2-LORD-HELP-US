@@ -1,7 +1,15 @@
 import {useEffect, useId, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
-import {Edit, Folder, MoreHorizontal, Plus, Search, Trash2} from "lucide-react";
+import {Archive, Edit, Folder, MoreHorizontal, Plus, Search, Trash2} from "lucide-react";
 import {Button} from "@/shared/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/shared/ui/select";
 import {Input} from "@/shared/ui/input";
 import {
 	Card,
@@ -85,6 +93,7 @@ export default function QuestionGeneration() {
 		fetchSubjects,
 		addSubject,
 		editSubject,
+		archiveSubjectAction,
 		removeSubject,
 	} = useSubjectStore();
 
@@ -181,6 +190,23 @@ export default function QuestionGeneration() {
 				description: parseApiError(err),
 			});
 			setDeleting(null);
+		}
+	};
+
+	const handleArchive = async (subject: Subject) => {
+		try {
+			await archiveSubjectAction(subject.subject_id);
+			toast.add({
+				type: "success",
+				title: "Subject archived",
+				description: `${subject.subject_name} has been archived.`,
+			});
+		} catch (err) {
+			toast.add({
+				type: "error",
+				title: "Archive failed",
+				description: parseApiError(err),
+			});
 		}
 	};
 
@@ -332,14 +358,19 @@ export default function QuestionGeneration() {
 											<MoreHorizontal className="size-4" />
 										</DropdownMenuTrigger>
 										<DropdownMenuContent side="bottom" align="end">
-											<DropdownMenuItem onClick={() => openEdit(subject)}>
+											<DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(subject); }}>
 												<Edit className="size-4" />
 												Edit
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={(e) => { e.stopPropagation(); void handleArchive(subject); }}>
+												<Archive className="size-4" />
+												Archive
 											</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem
 												variant="destructive"
-												onClick={() => setDeleting(subject)}>
+												onClick={(e) => { e.stopPropagation(); setDeleting(subject); }}>
 												<Trash2 className="size-4" />
 												Delete
 											</DropdownMenuItem>
@@ -429,17 +460,22 @@ export default function QuestionGeneration() {
 									Year level
 								</FieldLabel>
 								<FieldContent>
-									<select
-										id={`${baseId}-year-level`}
+									<Select
 										value={form.year_level}
-										onChange={(e) => setField("year_level", e.target.value)}
-										className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]">
-										{YEAR_LEVELS.map((level) => (
-											<option key={level} value={level}>
-												{level}
-											</option>
-										))}
-									</select>
+										onValueChange={(val) => val && setField("year_level", val)}>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select year level" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectGroup>
+												{YEAR_LEVELS.map((level) => (
+													<SelectItem key={level} value={level}>
+														{level}
+													</SelectItem>
+												))}
+											</SelectGroup>
+										</SelectContent>
+									</Select>
 								</FieldContent>
 							</Field>
 							<Field>
