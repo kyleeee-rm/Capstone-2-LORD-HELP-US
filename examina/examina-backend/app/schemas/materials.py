@@ -24,6 +24,13 @@ class MaterialUploadResponse(BaseModel):
     status: str = Field(validation_alias="upload_status")
     uploaded_at: datetime
 
+class MaterialUpdateRequest(BaseModel):
+    filename: str | None = None
+    title: str | None = None
+    description: str | None = None
+    teaching_hours: float | None = None
+    lesson_label: str | None = None
+
 
 class MaterialListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

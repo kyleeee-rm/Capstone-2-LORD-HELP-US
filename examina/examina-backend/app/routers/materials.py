@@ -19,10 +19,12 @@ from app.schemas.materials import (
     MaterialListResponse,
     MaterialStatusResponse,
     MaterialUploadResponse,
+    MaterialUpdateRequest,
 )
 from app.services import storage
 from app.services.material_processing_service import process_material
 from app.services.material_service import MaterialService
+
 
 router = APIRouter(prefix="/subject-folders", tags=["Learning Materials"])
 
@@ -241,6 +243,43 @@ def material_status(
         ),
     )
 
+@router.patch(
+    "/{folder_id}/materials/{material_id}",
+    response_model=MaterialUploadResponse,
+)
+def update_material(
+    folder_id: uuid.UUID,
+    material_id: uuid.UUID,
+    payload: MaterialUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: Faculty = Depends(get_current_user),
+):
+    material = _get_owned_material(
+        db=db,
+        folder_id=folder_id,
+        material_id=material_id,
+        faculty=current_user,
+    )
+
+    if "filename" in payload.model_fields_set:
+        material.file_name = payload.filename
+
+    if "title" in payload.model_fields_set:
+        material.title = payload.title
+
+    if "description" in payload.model_fields_set:
+        material.description = payload.description
+
+    if "teaching_hours" in payload.model_fields_set:
+        material.teaching_hours = payload.teaching_hours
+
+    if "lesson_label" in payload.model_fields_set:
+        material.lesson_label = payload.lesson_label
+
+    db.commit()
+    db.refresh(material)
+
+    return material
 
 @router.delete(
     "/{folder_id}/materials/{material_id}",
