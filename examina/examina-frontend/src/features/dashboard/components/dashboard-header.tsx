@@ -147,7 +147,13 @@ export default function DashboardHeader() {
 							<Search className="size-6" />
 						</Button>
 					) : (
-						<PaginationPrevious text="Back" onClick={() => navigate(-1)} />
+						<PaginationPrevious text="Back" onClick={() => {
+							if (location.pathname.startsWith("/dashboard/questions-generation")) {
+								navigate("/dashboard/questions-generation");
+							} else {
+								navigate(-1);
+							}
+						}} />
 					)}
 
 					<div className="flex-1 flex justify-center">
