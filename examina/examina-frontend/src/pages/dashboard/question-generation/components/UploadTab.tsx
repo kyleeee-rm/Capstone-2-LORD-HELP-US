@@ -451,32 +451,38 @@ export function UploadTab({folderId}: {folderId: string}) {
 									"flex flex-col gap-2 p-3 px-4 text-sm text-foreground transition-colors hover:bg-muted/50 cursor-pointer",
 									isSelected && "bg-secondary/10",
 								)}>
-								<div className="flex items-center justify-between gap-3">
-									<div className="flex min-w-0 items-center gap-3">
+								<div className="flex w-full items-center gap-2">
+									{/* LEFT SIDE */}
+									<div className="flex min-w-0 flex-1 items-center gap-1">
 										<button
 											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
 												toggleSelectMaterial(m.id);
 											}}
-											className="h-9 w-9 flex items-center justify-center text-secondary focus:outline-none focus:ring-2 focus:ring-secondary rounded">
+											className="flex h-9 w-9 shrink-0 items-center justify-center rounded focus:outline-none focus:ring-2 focus:ring-secondary">
 											{isSelected ? (
 												<CheckSquare className="size-5 text-secondary" />
 											) : (
 												<Square className="size-5 text-muted-foreground" />
 											)}
 										</button>
-										<FileText className="size-5 shrink-0 text-muted-foreground" />
-										<span className="truncate font-medium">{m.filename}</span>
+
+										<span className="min-w-0 truncate font-medium">
+											{m.filename}
+										</span>
+
 										{weekBadge && (
 											<Badge
 												variant="secondary"
-												className="shrink-0 text-[10px] px-1.5 py-0.5">
+												className="shrink-0 px-1.5 py-0.5 text-[10px]">
 												{weekBadge}
 											</Badge>
 										)}
 									</div>
-									<div className="flex items-center gap-2 shrink-0">
+
+									{/* RIGHT SIDE */}
+									<div className="ml-auto flex shrink-0 items-center gap-2">
 										<Badge
 											variant={
 												currentStatusInfo.status === "ready"
@@ -486,15 +492,16 @@ export function UploadTab({folderId}: {folderId: string}) {
 											className={cn(
 												"capitalize text-[10px]",
 												currentStatusInfo.status === "ready" &&
-													"text-emerald-600 border-emerald-300",
+													"border-emerald-300 text-emerald-600",
 												currentStatusInfo.status === "failed" &&
-													"text-destructive border-destructive/30",
+													"border-destructive/30 text-destructive",
 											)}>
 											{isProcessing && (
-												<Loader2 className="mr-1 size-3 animate-spin inline" />
+												<Loader2 className="mr-1 inline size-3 animate-spin" />
 											)}
 											{currentStatusInfo.status}
 										</Badge>
+
 										<div onClick={(e) => e.stopPropagation()}>
 											<DropdownMenu>
 												<DropdownMenuTrigger
