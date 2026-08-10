@@ -1,3 +1,4 @@
+import {useNavigate, useParams} from "react-router-dom";
 import {useEffect, useRef, useState} from "react";
 import {
 	Edit,
@@ -41,6 +42,8 @@ import {
 const ACCEPTED_FILE = /\.(pdf|docx)$/i;
 
 export function UploadTab({folderId}: {folderId: string}) {
+	const navigate = useNavigate();
+	const {subjectId} = useParams<{subjectId: string}>();
 	const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 	const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 	const [progress, setProgress] = useState(0);
@@ -200,9 +203,7 @@ export function UploadTab({folderId}: {folderId: string}) {
 					(p) => setProgress(p),
 				);
 			}
-			setSuccess(
-				`${pendingFiles.length} file(s) uploaded successfully.`,
-			);
+			setSuccess(`${pendingFiles.length} file(s) uploaded successfully.`);
 			pendingFiles.forEach((file) => {
 				addActivity({
 					action: "uploaded",
@@ -272,14 +273,16 @@ export function UploadTab({folderId}: {folderId: string}) {
 						<span>{selectedMaterialIds.size} material(s) selected</span>
 					</div>
 					<Button
-						size="sm"
+						size="lg"
 						variant="secondary"
-						className="w-full sm:w-auto text-xs sm:text-sm"
+						className="w-full sm:w-auto text-sm sm:text-md"
 						onClick={() => {
-							const questionsTabBtn = document.querySelector(
-								'[data-tab="questions"]',
-							) as HTMLButtonElement;
-							questionsTabBtn?.click();
+							navigate(
+								`/dashboard/questions-generation/${subjectId}/folders/${folderId}/customize`,
+								{
+									state: {selectedMaterialIds: Array.from(selectedMaterialIds)},
+								},
+							);
 						}}>
 						Generate Questions ({selectedMaterialIds.size})
 					</Button>

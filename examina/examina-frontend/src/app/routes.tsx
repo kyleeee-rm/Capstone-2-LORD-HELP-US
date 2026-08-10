@@ -28,6 +28,7 @@ import Menu from "@/pages/dashboard/shared/components/Menu";
 // Subjects
 import SubjectLibrary from "@/pages/dashboard/question-generation/components/SubjectLibrary";
 import SubjectFolder from "@/pages/dashboard/question-generation/components/SubjectFolder";
+import QuestionCustomization from "@/pages/dashboard/question-generation/components/QuestionCustomization";
 
 export default function AppRouter() {
 	return (
@@ -58,6 +59,10 @@ export default function AppRouter() {
 							element={<SubjectFolder />}
 						/>
 						<Route
+							path="questions-generation/:subjectId/folders/:folderId/customize"
+							element={<QuestionCustomization />}
+						/>
+						<Route
 							path="questions-generation/:subjectId/folders/:folderId"
 							element={<SubjectFolder />}
 						/>
@@ -74,6 +79,10 @@ export default function AppRouter() {
 				<Route element={<ProtectedRoute />}>
 					<Route path="/subjects" element={<SubjectLibrary />} />
 					<Route path="/subjects/:id" element={<SubjectFolder />} />
+					<Route
+						path="/subjects/:id/folders/:folderId/customize"
+						element={<QuestionCustomization />}
+					/>
 				</Route>
 
 				{/* Fallback */}
