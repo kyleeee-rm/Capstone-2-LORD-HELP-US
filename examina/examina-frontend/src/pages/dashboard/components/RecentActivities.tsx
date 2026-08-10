@@ -1,7 +1,7 @@
 import {useMemo, useState} from "react";
 import {Link} from "react-router-dom";
 import {formatDistanceToNow} from "date-fns";
-import {ChevronRight, Trash2} from "lucide-react";
+import {ChevronRight, FileText, Trash2} from "lucide-react";
 import {useActivityStore} from "@/shared/stores";
 import type {Activity} from "@/shared/stores";
 import {Button} from "@/shared/ui/button";
@@ -47,10 +47,18 @@ function groupActivities(activities: Activity[]): Record<DayGroup, Activity[]> {
 }
 
 export default function RecentActivities() {
-	const activities = useActivityStore((s) => s.activities);
+	const rawActivities = useActivityStore((s) => s.activities);
 	const clearActivities = useActivityStore((s) => s.clearActivities);
 	const [showAll, setShowAll] = useState(false);
 	const [confirmOpen, setConfirmOpen] = useState(false);
+
+	const activities = useMemo(
+		() =>
+			(Array.isArray(rawActivities) ? rawActivities : []).filter(
+				(a) => a && typeof a === "object" && a.id,
+			),
+		[rawActivities],
+	);
 
 	const visible = showAll ? activities : activities.slice(0, 5);
 	const groups = useMemo(() => groupActivities(visible), [visible]);
@@ -94,47 +102,73 @@ export default function RecentActivities() {
 				</Item>
 			) : (
 				<ItemGroup className="gap-0">
-					{DAY_GROUP_ORDER.filter((day) => groups[day].length > 0).map((day, dayIndex) => (
-						<div key={day} className="flex flex-col gap-2">
-							<p className="px-1 text-xs font-medium text-muted-foreground">
-								{day}
-							</p>
-							{groups[day].map((activity) => {
-								const Icon = ACTIVITY_TYPE_ICONS[activity.type];
-								const isDeleted = activity.action === "deleted";
-								return (
-									<Item
-										key={activity.id}
-										variant={isDeleted ? "muted" : "outline"}
-										size="sm"
-										render={activity.href ? <Link to={activity.href} /> : <div />}
-										className="gap-3">
-										<ItemMedia variant="icon">
-											<Icon className="size-4 text-muted-foreground" />
-										</ItemMedia>
-										<ItemContent className="flex-1">
-											<ItemTitle
-												className={isDeleted ? "text-muted-foreground" : "text-foreground"}>
-												{activity.name}
-											</ItemTitle>
-											<ItemDescription>
-												{activityLabel(activity.action, activity.type)}
-											</ItemDescription>
-										</ItemContent>
-										<ItemActions className="items-center gap-2">
-											<p className="text-xs text-muted-foreground whitespace-nowrap">
-												{formatDistanceToNow(activity.timestamp, {addSuffix: true})}
-											</p>
-											{activity.href && (
-												<ChevronRight className="size-4 text-muted-foreground" />
-											)}
-										</ItemActions>
-									</Item>
-								);
-							})}
-							{dayIndex < DAY_GROUP_ORDER.length - 1 && <ItemSeparator className="my-2" />}
-						</div>
-					))}
+					{DAY_GROUP_ORDER.filter((day) => groups[day].length > 0).map(
+						(day, dayIndex) => (
+							<div key={day} className="flex flex-col gap-2">
+								<p className="px-1 text-xs font-medium text-muted-foreground">
+									{day}
+								</p>
+								{groups[day].map((activity) => {
+									const Icon =
+										(activity.type && ACTIVITY_TYPE_ICONS[activity.type]) ||
+										FileText;
+									const isDeleted = activity.action === "deleted";
+									let timeStr = "";
+									if (
+										activity.timestamp &&
+										typeof activity.timestamp === "number" &&
+										!isNaN(activity.timestamp)
+									) {
+										try {
+											timeStr = formatDistanceToNow(activity.timestamp, {
+												addSuffix: true,
+											});
+										} catch {
+											timeStr = "";
+										}
+									}
+									return (
+										<Item
+											key={activity.id}
+											variant="outline"
+											size="sm"
+											render={
+												activity.href ? <Link to={activity.href} /> : <div />
+											}
+											className="gap-3">
+											<ItemMedia variant="icon">
+												<Icon className="size-4 text-muted-foreground" />
+											</ItemMedia>
+											<ItemContent className="flex-1">
+												<ItemTitle
+													className={
+														isDeleted
+															? "text-muted-foreground"
+															: "text-foreground"
+													}>
+													{activity.name}
+												</ItemTitle>
+												<ItemDescription>
+													{activityLabel(activity.action, activity.type)}
+												</ItemDescription>
+											</ItemContent>
+											<ItemActions className="items-center gap-2">
+												<p className="text-xs text-muted-foreground whitespace-nowrap">
+													{timeStr}
+												</p>
+												{activity.href && (
+													<ChevronRight className="size-4 text-muted-foreground" />
+												)}
+											</ItemActions>
+										</Item>
+									);
+								})}
+								{dayIndex < DAY_GROUP_ORDER.length - 1 && (
+									<ItemSeparator className="my-2" />
+								)}
+							</div>
+						),
+					)}
 				</ItemGroup>
 			)}
 

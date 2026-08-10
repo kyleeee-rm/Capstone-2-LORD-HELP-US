@@ -19,7 +19,9 @@ function capitalize(value: string): string {
 }
 
 export function activityLabel(action: Activity["action"], type: Activity["type"]): string {
-	return `${capitalize(action)} a ${type}`;
+	const safeAction = action ? capitalize(action) : "Updated";
+	const safeType = type ?? "item";
+	return `${safeAction} a ${safeType}`;
 }
 
 export const ACTIVITY_TYPE_ICONS: Record<Activity["type"], LucideIcon> = {
@@ -39,7 +41,12 @@ export const ACTIVITY_TYPE_LABELS: Record<Activity["type"], string> = {
 export type DayGroup = "Today" | "Yesterday" | "Earlier";
 
 export function dayGroup(timestamp: number): DayGroup {
-	if (isToday(timestamp)) return "Today";
-	if (isYesterday(timestamp)) return "Yesterday";
+	if (!timestamp || typeof timestamp !== "number" || isNaN(timestamp)) return "Earlier";
+	try {
+		if (isToday(timestamp)) return "Today";
+		if (isYesterday(timestamp)) return "Yesterday";
+	} catch {
+		return "Earlier";
+	}
 	return "Earlier";
 }
