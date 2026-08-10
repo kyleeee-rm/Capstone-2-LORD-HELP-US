@@ -4,23 +4,16 @@ import {
 	createSubject,
 	updateSubject,
 	archiveSubject,
-	restoreSubject,
 	deleteSubject,
 } from "@/features/subjects/api/subject-service";
+import {getAllFolders} from "@/features/subjects/api/subject-folder-service";
+import {getMaterials} from "@/features/materials/api/material-service";
 import {useActivityStore} from "@/shared/stores";
 import type {
 	Subject,
 	SubjectCreate,
 	SubjectUpdate,
 } from "@/shared/types/domain";
-
-function mockFileCount(subjectId: string): number {
-	let hash = 0;
-	for (let i = 0; i < subjectId.length; i++) {
-		hash = (hash * 31 + subjectId.charCodeAt(i)) % 1000;
-	}
-	return hash % 8;
-}
 
 type SubjectState = {
 	subjects: Subject[];
@@ -44,11 +37,24 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 		set({loading: true, error: null});
 		try {
 			const subjects = await getSubjects();
-			console.log("Fetched subjects:", subjects);
+			const folders = await getAllFolders().catch(() => []);
+
 			const fileCounts: Record<string, number> = {};
+
 			for (const subject of subjects) {
-				fileCounts[subject.subject_id] = mockFileCount(subject.subject_id);
+				const subjectFolders = folders.filter((f) => f.subject_id === subject.subject_id);
+				let totalFiles = 0;
+				for (const folder of subjectFolders) {
+					try {
+						const materials = await getMaterials(folder.folder_id);
+						totalFiles += materials.length;
+					} catch {
+						// ignore errors for individual folders
+					}
+				}
+				fileCounts[subject.subject_id] = totalFiles;
 			}
+
 			set({subjects, fileCounts, loading: false});
 		} catch {
 			set({loading: false, error: "Failed to load subjects."});

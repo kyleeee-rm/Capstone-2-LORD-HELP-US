@@ -1,6 +1,10 @@
 import {Link, useNavigate, useParams} from "react-router-dom";
 import {useState, useEffect, useRef} from "react";
-import {createFolder} from "@/features/subjects/api/subject-folder-service";
+import {
+	createFolder,
+	updateFolder,
+	deleteFolder,
+} from "@/features/subjects/api/subject-folder-service";
 import {useSubjectFolders} from "@/features/subjects";
 import {useActivityStore} from "@/shared/stores";
 import {
@@ -21,7 +25,23 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/ui/select";
-import {FolderPlus, Plus} from "lucide-react";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
+import {FolderPlus, Plus, MoreHorizontal, Edit2, Trash2} from "lucide-react";
 import {getFolderHref, useFolderDetail} from "../hooks/use-folder-detail";
 import {UploadTab} from "./UploadTab";
 import {GeneratedQuestions} from "./GeneratedQuestions";
@@ -33,11 +53,17 @@ export default function SubjectFolder() {
 	);
 	const [newFolderName, setNewFolderName] = useState("");
 	const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+
+	// Rename & Delete state
+	const [isRenaming, setIsRenaming] = useState(false);
+	const [renameValue, setRenameValue] = useState("");
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
 	const isCreatingFolder = useRef(false);
 
 	const addActivity = useActivityStore((s) => s.addActivity);
 
-	const {subjectId, folderId, subjectName, isSubjectHydrating, selectedFolder} =
+	const {subjectId, folderId, subjectName, isSubjectHydrating} =
 		useFolderDetail([], false);
 
 	const {
@@ -72,7 +98,6 @@ export default function SubjectFolder() {
 		}
 	}, [foldersLoading, subjectId, folders.length, refetchFolders]);
 
-	// Select the active folder (either from URL param or default to the first folder)
 	const activeFolder = folderId
 		? folders.find((f) => f.folder_id === folderId)
 		: folders[0];
@@ -96,6 +121,32 @@ export default function SubjectFolder() {
 			setShowNewFolderInput(false);
 			await refetchFolders();
 			navigate(getFolderHref(subjectId, created.folder_id));
+		} catch {
+			// handle error
+		}
+	};
+
+	const handleRenameFolder = async () => {
+		if (!activeFolderId || !renameValue.trim()) return;
+		try {
+			await updateFolder(activeFolderId, {folder_name: renameValue.trim()});
+			setIsRenaming(false);
+			await refetchFolders();
+		} catch {
+			// handle error
+		}
+	};
+
+	const handleDeleteFolder = async () => {
+		if (!activeFolderId || folders.length <= 1) return;
+		try {
+			await deleteFolder(activeFolderId);
+			setShowDeleteDialog(false);
+			await refetchFolders();
+			const remaining = folders.filter((f) => f.folder_id !== activeFolderId);
+			if (remaining.length > 0 && subjectId) {
+				navigate(getFolderHref(subjectId, remaining[0].folder_id));
+			}
 		} catch {
 			// handle error
 		}
@@ -148,6 +199,7 @@ export default function SubjectFolder() {
 				</BreadcrumbList>
 			</Breadcrumb>
 
+			{/* Header: title + controls - responsive column on mobile */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
@@ -159,15 +211,16 @@ export default function SubjectFolder() {
 					</p>
 				</div>
 
-				{/* Optional Sub-folder Selector if subject has multiple folders */}
-				<div className="flex items-center gap-2">
+				{/* Controls – dropdown on its own, then two buttons side by side */}
+				<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+					{/* Dropdown – only shown when multiple folders exist */}
 					{folders.length > 1 && activeFolderId && (
 						<Select
 							value={activeFolderId}
 							onValueChange={(folderId) =>
 								folderId && navigate(getFolderHref(subjectId!, folderId))
 							}>
-							<SelectTrigger className="w-48">
+							<SelectTrigger className="w-full sm:w-48">
 								<SelectValue placeholder="Select subfolder">
 									{activeFolder?.folder_name ?? "Select subfolder"}
 								</SelectValue>
@@ -183,18 +236,89 @@ export default function SubjectFolder() {
 							</SelectContent>
 						</Select>
 					)}
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => setShowNewFolderInput(!showNewFolderInput)}>
-						<FolderPlus className="size-4" />
-						New Subfolder
-					</Button>
+
+					{/* Row for "New Subfolder" + three‑dot menu – always side‑by‑side */}
+					<div className="flex w-full gap-2 sm:w-auto">
+						<Button
+							variant="outline"
+							size="sm"
+							className="flex-1 sm:w-auto"
+							onClick={() => setShowNewFolderInput(!showNewFolderInput)}>
+							<FolderPlus className="size-4" />
+							New Subfolder
+						</Button>
+
+						{activeFolderId && (
+							<DropdownMenu>
+								<DropdownMenuTrigger
+									render={
+										<Button
+											variant="outline"
+											size="icon-sm"
+											aria-label="Subfolder options"
+											className="shrink-0">
+											<MoreHorizontal className="size-4" />
+										</Button>
+									}
+								/>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										onClick={() => {
+											setRenameValue(activeFolder?.folder_name ?? "");
+											setIsRenaming(true);
+										}}>
+										<Edit2 className="size-4 mr-2" />
+										Rename Subfolder
+									</DropdownMenuItem>
+									{folders.length > 1 && (
+										<DropdownMenuItem
+											className="text-destructive focus:text-destructive"
+											onClick={() => setShowDeleteDialog(true)}>
+											<Trash2 className="size-4 mr-2" />
+											Delete Subfolder
+										</DropdownMenuItem>
+									)}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
+					</div>
 				</div>
 			</div>
 
+			{/* Rename input - responsive stacking */}
+			{isRenaming && (
+				<div className="flex flex-col gap-2 rounded-xl border border-border p-3 bg-muted/30 sm:flex-row">
+					<input
+						value={renameValue}
+						onChange={(e) => setRenameValue(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") void handleRenameFolder();
+						}}
+						placeholder="New subfolder name"
+						className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none"
+					/>
+					<div className="flex gap-2">
+						<Button
+							size="sm"
+							variant="secondary"
+							onClick={() => void handleRenameFolder()}
+							className="flex-1 sm:flex-none">
+							Save
+						</Button>
+						<Button
+							size="sm"
+							variant="destructive"
+							onClick={() => setIsRenaming(false)}
+							className="flex-1 sm:flex-none">
+							Cancel
+						</Button>
+					</div>
+				</div>
+			)}
+
+			{/* Create input - responsive stacking */}
 			{showNewFolderInput && (
-				<div className="flex gap-2 rounded-xl border border-border p-3 bg-muted/30">
+				<div className="flex flex-col gap-2 rounded-xl border border-border p-3 bg-muted/30 sm:flex-row">
 					<input
 						value={newFolderName}
 						onChange={(e) => setNewFolderName(e.target.value)}
@@ -207,7 +331,8 @@ export default function SubjectFolder() {
 					<Button
 						size="sm"
 						variant="secondary"
-						onClick={() => void handleCreateSubFolder()}>
+						onClick={() => void handleCreateSubFolder()}
+						className="w-full sm:w-auto">
 						<Plus className="size-4" />
 						Create
 					</Button>
@@ -219,41 +344,67 @@ export default function SubjectFolder() {
 					<p>{foldersError}</p>
 					<button
 						onClick={() => void refetchFolders()}
-						className="mt-2 text-sm font-medium text-primary hover:underline">
+						className="mt-2 text-xs font-medium underline">
 						Retry
 					</button>
 				</div>
 			)}
 
-			{/* Main Content Tabs: Material Sources & Question Generation */}
-			<div className="flex gap-2 border-b border-border">
+			{/* Tabs & Content */}
+			<div className="flex border-b border-border">
 				<button
+					type="button"
 					onClick={() => setActiveTab("materials")}
-					className={`px-4 py-2 text-sm font-medium transition-colors ${
+					className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
 						activeTab === "materials"
-							? "border-b-2 border-primary text-primary"
-							: "text-muted-foreground hover:text-foreground"
+							? "border-primary text-primary"
+							: "border-transparent text-muted-foreground hover:text-foreground"
 					}`}>
-					Material Sources
+					Learning Materials
 				</button>
 				<button
+					type="button"
 					data-tab="questions"
 					onClick={() => setActiveTab("questions")}
-					className={`px-4 py-2 text-sm font-medium transition-colors ${
+					className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
 						activeTab === "questions"
-							? "border-b-2 border-primary text-primary"
-							: "text-muted-foreground hover:text-foreground"
+							? "border-primary text-primary"
+							: "border-transparent text-muted-foreground hover:text-foreground"
 					}`}>
-					Question Generation
+					Generated Questions
 				</button>
 			</div>
 
 			{activeFolderId && (
-				<>
+				<div className="mt-2">
 					{activeTab === "materials" && <UploadTab folderId={activeFolderId} />}
-					{activeTab === "questions" && <GeneratedQuestions />}
-				</>
+					{activeTab === "questions" && (
+						<GeneratedQuestions folderId={activeFolderId} />
+					)}
+				</div>
 			)}
+
+			{/* Delete Confirmation Dialog */}
+			<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete subfolder?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to delete "{activeFolder?.folder_name}"? All
+							materials inside this subfolder will be removed. This action
+							cannot be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={() => void handleDeleteFolder()}>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }
