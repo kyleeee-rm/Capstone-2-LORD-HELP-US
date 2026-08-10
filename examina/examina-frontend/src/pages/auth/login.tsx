@@ -130,6 +130,7 @@ export default function Login() {
 											<TooltipTrigger
 												render={
 													<InputGroupButton
+														type="button"
 														size="icon-sm"
 														onClick={togglePassword}
 														aria-label={

@@ -28,7 +28,9 @@ import {GeneratedQuestions} from "./GeneratedQuestions";
 
 export default function SubjectFolder() {
 	const navigate = useNavigate();
-	const [activeTab, setActiveTab] = useState<"materials" | "questions">("materials");
+	const [activeTab, setActiveTab] = useState<"materials" | "questions">(
+		"materials",
+	);
 	const [newFolderName, setNewFolderName] = useState("");
 	const [showNewFolderInput, setShowNewFolderInput] = useState(false);
 	const isCreatingFolder = useRef(false);
@@ -47,7 +49,8 @@ export default function SubjectFolder() {
 
 	const detailState = useFolderDetail(folders, foldersLoading);
 	const currentSubjectName = detailState.subjectName ?? subjectName;
-	const currentIsHydrating = detailState.isSubjectHydrating || isSubjectHydrating;
+	const currentIsHydrating =
+		detailState.isSubjectHydrating || isSubjectHydrating;
 
 	// Automatically ensure at least one default folder exists for this subject
 	useEffect(() => {
@@ -98,7 +101,11 @@ export default function SubjectFolder() {
 		}
 	};
 
-	if (foldersLoading || currentIsHydrating || (!activeFolderId && folders.length === 0)) {
+	if (
+		foldersLoading ||
+		currentIsHydrating ||
+		(!activeFolderId && folders.length === 0)
+	) {
 		return (
 			<div className="mx-auto w-full max-w-5xl flex flex-col gap-4">
 				<div className="flex items-center gap-2">
@@ -116,13 +123,17 @@ export default function SubjectFolder() {
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink render={<Link to="/dashboard/questions-generation" />}>
+						<BreadcrumbLink
+							render={<Link to="/dashboard/questions-generation" />}>
 							Subjects
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbLink render={<Link to={`/dashboard/questions-generation/${subjectId}`} />}>
+						<BreadcrumbLink
+							render={
+								<Link to={`/dashboard/questions-generation/${subjectId}`} />
+							}>
 							{currentSubjectName ?? subjectId}
 						</BreadcrumbLink>
 					</BreadcrumbItem>
@@ -143,16 +154,23 @@ export default function SubjectFolder() {
 						{currentSubjectName ?? "Subject Materials"}
 					</h1>
 					<p className="text-sm text-muted-foreground">
-						Upload learning sources and generate AI exam questions for this subject.
+						Upload learning sources and generate AI exam questions for this
+						subject.
 					</p>
 				</div>
 
 				{/* Optional Sub-folder Selector if subject has multiple folders */}
 				<div className="flex items-center gap-2">
 					{folders.length > 1 && activeFolderId && (
-						<Select value={activeFolderId} onValueChange={(folderId) => folderId && navigate(getFolderHref(subjectId!, folderId))}>
+						<Select
+							value={activeFolderId}
+							onValueChange={(folderId) =>
+								folderId && navigate(getFolderHref(subjectId!, folderId))
+							}>
 							<SelectTrigger className="w-48">
-								<SelectValue placeholder="Select subfolder" />
+								<SelectValue placeholder="Select subfolder">
+									{activeFolder?.folder_name ?? "Select subfolder"}
+								</SelectValue>
 							</SelectTrigger>
 							<SelectContent>
 								<SelectGroup>
@@ -186,7 +204,10 @@ export default function SubjectFolder() {
 						placeholder="Subfolder name (e.g. Midterm Topics)"
 						className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none"
 					/>
-					<Button size="sm" variant="secondary" onClick={() => void handleCreateSubFolder()}>
+					<Button
+						size="sm"
+						variant="secondary"
+						onClick={() => void handleCreateSubFolder()}>
 						<Plus className="size-4" />
 						Create
 					</Button>
