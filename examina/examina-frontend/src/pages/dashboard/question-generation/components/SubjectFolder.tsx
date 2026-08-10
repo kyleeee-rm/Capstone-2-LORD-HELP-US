@@ -268,14 +268,14 @@ export default function SubjectFolder() {
 											setIsRenaming(true);
 										}}>
 										<Edit2 className="size-4 mr-2" />
-										Rename Subfolder
+										Rename
 									</DropdownMenuItem>
 									{folders.length > 1 && (
 										<DropdownMenuItem
 											className="text-destructive focus:text-destructive"
 											onClick={() => setShowDeleteDialog(true)}>
 											<Trash2 className="size-4 mr-2" />
-											Delete Subfolder
+											Delete
 										</DropdownMenuItem>
 									)}
 								</DropdownMenuContent>
