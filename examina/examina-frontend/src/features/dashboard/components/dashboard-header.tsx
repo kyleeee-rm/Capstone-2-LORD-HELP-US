@@ -138,14 +138,14 @@ export default function DashboardHeader() {
 			<header className="fixed top-0 left-0 right-0 z-40 bg-background border-b border-border">
 				<div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
 					{isRoot ? (
-						<Button
-							variant="ghost"
-							size="icon"
-							aria-label="Search"
-							nativeButton={false}
-							render={<Link to="/dashboard/search" />}>
-							<Search className="size-6" />
-						</Button>
+						<Link to="/dashboard/search">
+							<Button
+								variant="ghost"
+								size="icon"
+								aria-label="Search">
+								<Search className="size-6" />
+							</Button>
+						</Link>
 					) : (
 						<PaginationPrevious text="Back" onClick={() => {
 							if (location.pathname.startsWith("/dashboard/questions-generation")) {
@@ -180,19 +180,19 @@ export default function DashboardHeader() {
 						)}
 					</div>
 
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label="Notifications"
-						className="relative shrink-0"
-						nativeButton={false}
-						render={<Link to="/dashboard/notifications" />}>
-						{bellIcon}
-						<span
-							className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-							aria-hidden="true"
-						/>
-					</Button>
+					<Link to="/dashboard/notifications">
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label="Notifications"
+							className="relative shrink-0">
+							{bellIcon}
+							<span
+								className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+								aria-hidden="true"
+							/>
+						</Button>
+					</Link>
 				</div>
 			</header>
 			<NotificationSettingsDialog

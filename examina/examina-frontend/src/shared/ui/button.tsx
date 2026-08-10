@@ -38,21 +38,30 @@ const buttonVariants = cva(
 	},
 );
 
+type ButtonPrimitiveProps = React.PropsWithChildren<ButtonPrimitive.Props & { className?: string }>;
+const ButtonPrimitiveWithChildren = ButtonPrimitive as React.ComponentType<ButtonPrimitiveProps>;
+
 function Button({
 	className,
 	variant = "default",
 	size = "default",
 	children,
 	...props
-}: React.PropsWithChildren<React.ComponentProps<"button"> & ButtonPrimitive.Props & VariantProps<typeof buttonVariants>>) {
+}: React.PropsWithChildren<
+	React.ComponentProps<"button"> &
+	ButtonPrimitive.Props &
+	VariantProps<typeof buttonVariants> & {
+		nativeButton?: boolean;
+	}
+>) {
 	return (
-		<ButtonPrimitive
+		<ButtonPrimitiveWithChildren
 			data-slot="button"
 			className={cn(buttonVariants({variant, size, className}))}
 			{...props}
 		>
 			{children}
-		</ButtonPrimitive>
+		</ButtonPrimitiveWithChildren>
 	);
 }
 
