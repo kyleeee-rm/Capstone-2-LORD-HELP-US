@@ -144,22 +144,7 @@ export default function DashboardHeader() {
 							</Button>
 						</Link>
 					) : (
-						<PaginationPrevious
-							text="Back"
-							onClick={() => {
-								const path = location.pathname;
-
-								if (path === "/dashboard/questions-generation") {
-									navigate("/dashboard");
-								} else if (
-									path.startsWith("/dashboard/questions-generation/")
-								) {
-									navigate("/dashboard/questions-generation");
-								} else {
-									navigate(-1);
-								}
-							}}
-						/>
+						<PaginationPrevious text="Back" onClick={() => navigate(-1)} />
 					)}
 
 					<div className="flex-1 flex justify-center">
