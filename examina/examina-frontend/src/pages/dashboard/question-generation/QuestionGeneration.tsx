@@ -1,15 +1,15 @@
 import {useEffect, useId, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
-import {Archive, Edit, Folder, MoreHorizontal, Plus, Search, Trash2} from "lucide-react";
-import {Button} from "@/shared/ui/button";
 import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/shared/ui/select";
+	Archive,
+	Edit,
+	Folder,
+	MoreHorizontal,
+	Plus,
+	Search,
+	Trash2,
+} from "lucide-react";
+import {Button} from "@/shared/ui/button";
 import {Input} from "@/shared/ui/input";
 import {
 	Card,
@@ -59,24 +59,18 @@ import {Field, FieldContent, FieldError, FieldLabel} from "@/shared/ui/field";
 import {toast} from "@/shared/ui/toast";
 import {parseApiError} from "@/shared/lib/parse-api-error";
 import {useSubjectStore} from "./subject-store";
-import type {Subject, SubjectCreate, YearLevel} from "@/shared/types/domain";
+import type {Subject, SubjectCreate} from "@/shared/types/domain";
+import {useShallow} from "zustand/react/shallow";
 
 function getDetailsHref(subjectId: string): string {
 	return `/dashboard/questions-generation/${subjectId}`;
 }
 
-const YEAR_LEVELS: YearLevel[] = [
-	"1st Year",
-	"2nd Year",
-	"3rd Year",
-	"4th Year",
-];
-
 const EMPTY_FORM: SubjectCreate = {
 	subject_code: "",
 	subject_name: "",
 	course: "",
-	year_level: "1st Year",
+	section: "",
 	semester: "",
 	academic_year: "",
 };
@@ -95,7 +89,19 @@ export default function QuestionGeneration() {
 		editSubject,
 		archiveSubjectAction,
 		removeSubject,
-	} = useSubjectStore();
+	} = useSubjectStore(
+		useShallow((state) => ({
+			subjects: state.subjects,
+			fileCounts: state.fileCounts,
+			loading: state.loading,
+			error: state.error,
+			fetchSubjects: state.fetchSubjects,
+			addSubject: state.addSubject,
+			editSubject: state.editSubject,
+			archiveSubjectAction: state.archiveSubjectAction,
+			removeSubject: state.removeSubject,
+		})),
+	);
 
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<Subject | null>(null);
@@ -107,7 +113,10 @@ export default function QuestionGeneration() {
 	const currentSubject = subjects.find((s) => s.subject_id === subjectId);
 	const baseId = useId();
 
-	const filteredSubjects = subjects.filter((subject) => {
+	const visibleSubjects = subjects.filter((subject) => {
+		if (subjectId) {
+			return subject.subject_id === subjectId;
+		}
 		const q = query.trim().toLowerCase();
 		if (!q) return true;
 		return (
@@ -133,7 +142,7 @@ export default function QuestionGeneration() {
 			subject_code: subject.subject_code,
 			subject_name: subject.subject_name,
 			course: subject.course,
-			year_level: subject.year_level,
+			section: subject.section,
 			semester: subject.semester,
 			academic_year: subject.academic_year,
 		});
@@ -297,7 +306,7 @@ export default function QuestionGeneration() {
 						</Button>
 					</EmptyContent>
 				</Empty>
-			) : filteredSubjects.length === 0 ? (
+			) : visibleSubjects.length === 0 ? (
 				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
@@ -318,8 +327,8 @@ export default function QuestionGeneration() {
 					</EmptyContent>
 				</Empty>
 			) : (
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{filteredSubjects.map((subject) => (
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+					{visibleSubjects.map((subject) => (
 						<Card
 							key={subject.subject_id}
 							onClick={() => navigate(getDetailsHref(subject.subject_id))}
@@ -335,15 +344,50 @@ export default function QuestionGeneration() {
 							className="cursor-pointer transition-colors hover:ring-ring/30 shadow-none border-2 py-3 gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
-									<Link
-										to={getDetailsHref(subject.subject_id)}
-										onClick={(e) => e.stopPropagation()}
-										className="min-w-0 truncate hover:underline"
-										aria-label={`Open ${subject.subject_name}`}>
-										{subject.subject_name}
-									</Link>
+									{(() => {
+										const parts = [
+											subject.subject_code,
+											subject.subject_name,
+										].filter(Boolean);
+										if (parts.length === 0) return null;
+										return (
+											<Link
+												to={getDetailsHref(subject.subject_id)}
+												onClick={(e) => e.stopPropagation()}
+												className="min-w-0 truncate hover:underline"
+												aria-label={
+													subject.subject_name
+														? `Open ${subject.subject_name}`
+														: `Open ${subject.subject_code}`
+												}>
+												{parts.join(" – ")}
+											</Link>
+										);
+									})()}
 								</CardTitle>
-								<Badge variant="secondary">{subject.subject_code}</Badge>
+								{(subject.subject_code || subject.subject_name) && (
+									<Badge variant="secondary">
+										{(() => {
+											const elements: React.ReactNode[] = [
+												subject.course ? (
+													<span key="course">{subject.course}</span>
+												) : null,
+												subject.section ? (
+													<span key="section">{subject.section}</span>
+												) : null,
+											].filter(Boolean);
+
+											return elements.flatMap((el, i) => [
+												el,
+												i < elements.length - 1 ? (
+													<span key={`sep-${i}`} aria-hidden="true">
+														-
+													</span>
+												) : null,
+											]);
+										})()}
+									</Badge>
+								)}
 								<CardAction>
 									<DropdownMenu>
 										<DropdownMenuTrigger
@@ -358,19 +402,29 @@ export default function QuestionGeneration() {
 											<MoreHorizontal className="size-4" />
 										</DropdownMenuTrigger>
 										<DropdownMenuContent side="bottom" align="end">
-											<DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(subject); }}>
+											<DropdownMenuItem
+												onClick={(e) => {
+													e.stopPropagation();
+													openEdit(subject);
+												}}>
 												<Edit className="size-4" />
 												Edit
 											</DropdownMenuItem>
 											<DropdownMenuItem
-												onClick={(e) => { e.stopPropagation(); void handleArchive(subject); }}>
+												onClick={(e) => {
+													e.stopPropagation();
+													void handleArchive(subject);
+												}}>
 												<Archive className="size-4" />
 												Archive
 											</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem
 												variant="destructive"
-												onClick={(e) => { e.stopPropagation(); setDeleting(subject); }}>
+												onClick={(e) => {
+													e.stopPropagation();
+													setDeleting(subject);
+												}}>
 												<Trash2 className="size-4" />
 												Delete
 											</DropdownMenuItem>
@@ -378,36 +432,55 @@ export default function QuestionGeneration() {
 									</DropdownMenu>
 								</CardAction>
 							</CardHeader>
-							<CardContent className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
-								<span className="inline-flex items-center gap-1.5">
-									<Folder
-										className="size-3.5 text-secondary"
-										aria-hidden="true"
-									/>
-									{fileCounts[subject.subject_id] ?? 0} files
-								</span>
-								{subject.course && (
-									<span className="min-w-0">
-										{subject.course}
-										{subject.year_level ? ` ${subject.year_level}` : ""}
-									</span>
-								)}
-								{(subject.course || subject.year_level) && (
-									<span className="text-muted-foreground/50">•</span>
-								)}
-								{subject.semester && (
-									<span className="min-w-0">{subject.semester}</span>
-								)}
-								{subject.academic_year && (
-									<span className="min-w-0">{subject.academic_year}</span>
-								)}
+
+							<CardContent className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+								{(() => {
+									const elements: React.ReactNode[] = [
+										<span
+											key="files"
+											className="inline-flex items-center gap-1.5">
+											<Folder
+												className="size-3.5 text-secondary"
+												aria-hidden="true"
+											/>
+											{fileCounts[subject.subject_id] ?? 0} files
+										</span>,
+										subject.semester ? (
+											<span key="sem">{subject.semester} Semester</span>
+										) : null,
+										subject.academic_year ? (
+											<span key="ay">{subject.academic_year}</span>
+										) : null,
+									].filter(Boolean);
+
+									return elements.flatMap((el, i) => [
+										el,
+										i < elements.length - 1 ? (
+											<span
+												key={`sep-${i}`}
+												className="text-muted-foreground/50"
+												aria-hidden="true">
+												|
+											</span>
+										) : null,
+									]);
+								})()}
 							</CardContent>
 						</Card>
 					))}
 				</div>
 			)}
 
-			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+			<Dialog
+				open={dialogOpen}
+				onOpenChange={(open) => {
+					setDialogOpen(open);
+					if (!open) {
+						setForm(EMPTY_FORM);
+						setError("");
+						setEditing(null);
+					}
+				}}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>
@@ -456,26 +529,14 @@ export default function QuestionGeneration() {
 								</FieldContent>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`${baseId}-year-level`}>
-									Year level
-								</FieldLabel>
+								<FieldLabel htmlFor={`${baseId}-section`}>Section</FieldLabel>
 								<FieldContent>
-									<Select
-										value={form.year_level}
-										onValueChange={(val) => val && setField("year_level", val)}>
-										<SelectTrigger className="w-full">
-											<SelectValue placeholder="Select year level" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectGroup>
-												{YEAR_LEVELS.map((level) => (
-													<SelectItem key={level} value={level}>
-														{level}
-													</SelectItem>
-												))}
-											</SelectGroup>
-										</SelectContent>
-									</Select>
+									<Input
+										id={`${baseId}-section`}
+										value={form.section}
+										onChange={(e) => setField("section", e.target.value)}
+										placeholder="e.g. 3A"
+									/>
 								</FieldContent>
 							</Field>
 							<Field>

@@ -11,10 +11,10 @@ import type {
 
 // Get all subjects
 export const getSubjects = async (archived?: boolean): Promise<Subject[]> => {
-	const response = await api.get<Subject[]>("/subjects", {
+	const response = await api.get<BackendSubject[]>("/subjects", {
 		params: archived !== undefined ? { archived } : undefined,
 	});
-	return response.data;
+	return response.data.map(normalizeSubject);
 };
 
 // Get a single subject by ID
@@ -22,8 +22,8 @@ export const getSubjectById = async (
 	subjectId: string,
 ): Promise<Subject | null> => {
 	try {
-		const response = await api.get<Subject>(`/subjects/${subjectId}`);
-		return response.data;
+		const response = await api.get<BackendSubject>(`/subjects/${subjectId}`);
+		return normalizeSubject(response.data);
 	} catch (error) {
 		if (axios.isAxiosError(error) && error.response?.status === 404) {
 			return null;
@@ -33,11 +33,18 @@ export const getSubjectById = async (
 };
 
 // Create a new subject
+// NOTE: the backend API still uses the `year_level` field internally. To keep the
+// frontend `Subject` shape using `section`, we transparently map `section` to
+// `year_level` in outgoing payloads and back when normalizing responses.
 export const createSubject = async (
 	payload: SubjectCreate,
 ): Promise<Subject> => {
-	const response = await api.post<Subject>("/subjects", payload);
-	return response.data;
+	const {section, ...rest} = payload;
+	const response = await api.post<Subject>("/subjects", {
+		...rest,
+		year_level: section,
+	});
+	return normalizeSubject(response.data);
 };
 
 // Update an existing subject
@@ -45,9 +52,21 @@ export const updateSubject = async (
 	id: string,
 	payload: SubjectUpdate,
 ): Promise<Subject> => {
-	const response = await api.put<Subject>(`/subjects/${id}`, payload);
-	return response.data;
+	const {section, ...rest} = payload;
+	const response = await api.put<Subject>(`/subjects/${id}`, {
+		...rest,
+		...(section !== undefined ? {year_level: section} : {}),
+	});
+	return normalizeSubject(response.data);
 };
+
+// Internal: coerce a backend subject (`year_level` field) to the frontend `Subject` shape (`section`).
+type BackendSubject = Subject & {year_level?: string};
+function normalizeSubject(data: Subject): Subject {
+	const raw = data as BackendSubject;
+	const {year_level, ...rest} = raw;
+	return year_level !== undefined ? {...rest, section: year_level} : rest;
+}
 
 //archive a subject
 export const archiveSubject = async (id: string): Promise<void> => {

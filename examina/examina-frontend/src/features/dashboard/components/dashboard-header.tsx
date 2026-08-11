@@ -139,21 +139,27 @@ export default function DashboardHeader() {
 				<div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
 					{isRoot ? (
 						<Link to="/dashboard/search">
-							<Button
-								variant="ghost"
-								size="icon"
-								aria-label="Search">
+							<Button variant="ghost" size="icon" aria-label="Search">
 								<Search className="size-6" />
 							</Button>
 						</Link>
 					) : (
-						<PaginationPrevious text="Back" onClick={() => {
-							if (location.pathname.startsWith("/dashboard/questions-generation")) {
-								navigate("/dashboard/questions-generation");
-							} else {
-								navigate(-1);
-							}
-						}} />
+						<PaginationPrevious
+							text="Back"
+							onClick={() => {
+								const path = location.pathname;
+
+								if (path === "/dashboard/questions-generation") {
+									navigate("/dashboard");
+								} else if (
+									path.startsWith("/dashboard/questions-generation/")
+								) {
+									navigate("/dashboard/questions-generation");
+								} else {
+									navigate(-1);
+								}
+							}}
+						/>
 					)}
 
 					<div className="flex-1 flex justify-center">
