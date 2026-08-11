@@ -50,7 +50,11 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 					try {
 						const materials = await getMaterials(folder.folder_id);
 						totalFiles += materials.length;
-					} catch {
+					} catch (err) {
+						console.warn("[subject-store] skipped folder material count", {
+							folderId: folder.folder_id,
+							error: err,
+						});
 						// ignore errors for individual folders
 					}
 				}
@@ -58,7 +62,8 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 			}
 
 			set({subjects, fileCounts, loading: false});
-		} catch {
+		} catch (err) {
+			console.error("[subject-store] Failed to load subjects", err);
 			set({loading: false, error: "Failed to load subjects."});
 		}
 	},
@@ -78,6 +83,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 				href: `/subjects/${created.subject_id}`,
 			});
 		} catch (err) {
+			console.error("[subject-store] createSubject failed", err);
 			set({error: "Failed to create subject."});
 			throw err;
 		}
@@ -99,6 +105,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 				href: `/subjects/${id}`,
 			});
 		} catch (err) {
+			console.error("[subject-store] updateSubject failed", {id, err});
 			set({error: "Failed to update subject."});
 			throw err;
 		}
@@ -123,6 +130,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 				});
 			}
 		} catch (err) {
+			console.error("[subject-store] archiveSubjectAction failed", {id, err});
 			set({error: "Failed to archive subject."});
 			throw err;
 		}
@@ -147,6 +155,7 @@ export const useSubjectStore = create<SubjectState>((set, get) => ({
 				});
 			}
 		} catch (err) {
+			console.error("[subject-store] removeSubject failed", {id, err});
 			set({error: "Failed to delete subject."});
 			throw err;
 		}

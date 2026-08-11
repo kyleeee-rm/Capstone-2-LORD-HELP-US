@@ -12,7 +12,11 @@ import type {
 // Get all subjects
 export const getSubjects = async (archived?: boolean): Promise<Subject[]> => {
 	const response = await api.get<BackendSubject[]>("/subjects", {
-		params: archived !== undefined ? { archived } : undefined,
+		params: archived !== undefined ? {archived} : undefined,
+	});
+	console.debug("[subject-service] getSubjects response", {
+		archived,
+		count: response.data.length,
 	});
 	return response.data.map(normalizeSubject);
 };
@@ -40,6 +44,7 @@ export const createSubject = async (
 	payload: SubjectCreate,
 ): Promise<Subject> => {
 	const {section, ...rest} = payload;
+	console.debug("[subject-service] createSubject payload", {section, rest});
 	const response = await api.post<Subject>("/subjects", {
 		...rest,
 		year_level: section,
@@ -53,6 +58,11 @@ export const updateSubject = async (
 	payload: SubjectUpdate,
 ): Promise<Subject> => {
 	const {section, ...rest} = payload;
+	console.debug("[subject-service] updateSubject payload", {
+		id,
+		section,
+		hasSection: section !== undefined,
+	});
 	const response = await api.put<Subject>(`/subjects/${id}`, {
 		...rest,
 		...(section !== undefined ? {year_level: section} : {}),
@@ -61,11 +71,22 @@ export const updateSubject = async (
 };
 
 // Internal: coerce a backend subject (`year_level` field) to the frontend `Subject` shape (`section`).
-type BackendSubject = Subject & {year_level?: string};
+type BackendSubject = Subject & {year_level?: string; section?: string};
 function normalizeSubject(data: Subject): Subject {
 	const raw = data as BackendSubject;
-	const {year_level, ...rest} = raw;
-	return year_level !== undefined ? {...rest, section: year_level} : rest;
+	const {year_level, section, ...rest} = raw;
+	const normalizedSection =
+		typeof section === "string" && section.trim().length > 0
+			? section
+			: typeof year_level === "string"
+				? year_level
+				: "";
+	console.debug("[subject-service] normalizeSubject", {
+		hasYearLevel: typeof year_level === "string",
+		hasSection: typeof section === "string",
+		normalizedSection,
+	});
+	return {...rest, section: normalizedSection};
 }
 
 //archive a subject
