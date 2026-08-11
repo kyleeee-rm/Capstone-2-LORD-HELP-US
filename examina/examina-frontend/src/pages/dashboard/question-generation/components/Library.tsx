@@ -1,9 +1,9 @@
 import {useState, useEffect, useId} from "react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {
 	Archive,
-	BarChart3,
-	FileSpreadsheet,
+	BarChart2,
+	Table,
 	Folder,
 	Trash2,
 	RefreshCw,
@@ -58,7 +58,15 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import {Field, FieldContent, FieldError, FieldLabel} from "@/shared/ui/field";
 import {Input} from "@/shared/ui/input";
-import type {Subject, SubjectCreate, YearLevel} from "@/shared/types/domain";
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/shared/ui/empty";
+import type {Subject, SubjectCreate} from "@/shared/types/domain";
 
 type LibraryTab =
 	| "resources"
@@ -66,23 +74,19 @@ type LibraryTab =
 	| "scanned-results"
 	| "item-analysis";
 
-const YEAR_LEVELS: YearLevel[] = [
-	"1st Year",
-	"2nd Year",
-	"3rd Year",
-	"4th Year",
-];
+// ✅ Removed YearLevel and YEAR_LEVELS – use section as text input
 
 const EMPTY_FORM: SubjectCreate = {
 	subject_code: "",
 	subject_name: "",
 	course: "",
-	year_level: "1st Year",
+	section: "", // ✅ Changed from year_level
 	semester: "",
 	academic_year: "",
 };
 
 export default function Library() {
+	const navigate = useNavigate();
 	const [activeTab, setActiveTab] = useState<LibraryTab>("resources");
 	const [activeSubjects, setActiveSubjects] = useState<Subject[]>([]);
 	const [archivedSubjects, setArchivedSubjects] = useState<Subject[]>([]);
@@ -126,7 +130,7 @@ export default function Library() {
 			subject_code: subject.subject_code,
 			subject_name: subject.subject_name,
 			course: subject.course,
-			year_level: subject.year_level,
+			section: subject.section, // ✅ Changed from year_level
 			semester: subject.semester,
 			academic_year: subject.academic_year,
 		});
@@ -236,12 +240,8 @@ export default function Library() {
 				{[
 					{id: "resources", label: "Resource Library", icon: Folder},
 					{id: "archives", label: "Archives", icon: Archive},
-					{
-						id: "scanned-results",
-						label: "Scanned Results",
-						icon: FileSpreadsheet,
-					},
-					{id: "item-analysis", label: "Item Analysis", icon: BarChart3},
+					{id: "scanned-results", label: "Scanned Results", icon: Table},
+					{id: "item-analysis", label: "Item Analysis", icon: BarChart2},
 				].map((tab) => {
 					const Icon = tab.icon;
 					return (
@@ -261,7 +261,7 @@ export default function Library() {
 			</div>
 
 			{loading ? (
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
 					{Array.from({length: 6}).map((_, i) => (
 						<Card key={i}>
 							<CardHeader>
@@ -278,137 +278,243 @@ export default function Library() {
 				<>
 					{activeTab === "resources" && (
 						<div className="flex flex-col gap-4">
-							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-								{activeSubjects.map((subject) => (
-									<Card
-										key={subject.subject_id}
-										className="cursor-pointer transition-colors hover:ring-ring/30 shadow-none border-2 py-3 gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										onClick={() =>
-											(window.location.href = `/dashboard/questions-generation/${subject.subject_id}`)
-										}>
-										<CardHeader>
-											<CardTitle className="flex items-center gap-2">
-												<Link
-													to={`/dashboard/questions-generation/${subject.subject_id}`}
-													onClick={(e) => e.stopPropagation()}
-													className="min-w-0 truncate hover:underline">
-													{subject.subject_name}
-												</Link>
-											</CardTitle>
-											<Badge variant="secondary">{subject.subject_code}</Badge>
-											<CardAction>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														render={
-															<Button
-																variant="ghost"
-																size="icon"
-																aria-label={`Options for ${subject.subject_name}`}
+							{activeSubjects.length === 0 ? (
+								<Empty>
+									<EmptyHeader>
+										<EmptyMedia variant="icon">
+											<Folder className="size-5" />
+										</EmptyMedia>
+										<EmptyTitle>No active subjects</EmptyTitle>
+										<EmptyDescription>
+											You don't have any active subjects in your library. Create
+											a new subject to get started.
+										</EmptyDescription>
+									</EmptyHeader>
+									<EmptyContent>
+										<Button
+											variant="secondary"
+											onClick={() =>
+												navigate("/dashboard/questions-generation")
+											}>
+											Go to Question Generation
+										</Button>
+									</EmptyContent>
+								</Empty>
+							) : (
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+									{activeSubjects.map((subject) => (
+										<Card
+											key={subject.subject_id}
+											onClick={() =>
+												navigate(
+													`/dashboard/questions-generation/${subject.subject_id}`,
+												)
+											}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													e.preventDefault();
+													navigate(
+														`/dashboard/questions-generation/${subject.subject_id}`,
+													);
+												}
+											}}
+											role="link"
+											tabIndex={0}
+											aria-label={`Open ${subject.subject_name}`}
+											className="cursor-pointer transition-colors hover:ring-ring/30 shadow-none border-2 py-3 gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+											<CardHeader>
+												<CardTitle className="flex items-center gap-2">
+													{(() => {
+														const parts = [
+															subject.subject_code,
+															subject.subject_name,
+														].filter(Boolean);
+														if (parts.length === 0) return null;
+														return (
+															<Link
+																to={`/dashboard/questions-generation/${subject.subject_id}`}
+																onClick={(e) => e.stopPropagation()}
+																className="min-w-0 truncate hover:underline"
+																aria-label={
+																	subject.subject_name
+																		? `Open ${subject.subject_name}`
+																		: `Open ${subject.subject_code}`
+																}>
+																{parts.join(" – ")}
+															</Link>
+														);
+													})()}
+												</CardTitle>
+												<Badge variant="secondary">
+													{(() => {
+														const elements: React.ReactNode[] = [
+															subject.course ? (
+																<span key="course">{subject.course}</span>
+															) : null,
+															subject.section ? (
+																<span key="section">{subject.section}</span>
+															) : null,
+														].filter(Boolean);
+														return elements.flatMap((el, i) => [
+															el,
+															i < elements.length - 1 ? (
+																<span key={`sep-${i}`} aria-hidden="true">
+																	-
+																</span>
+															) : null,
+														]);
+													})()}
+												</Badge>
+												<CardAction>
+													<DropdownMenu>
+														<DropdownMenuTrigger
+															render={
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	aria-label={`Options for ${subject.subject_name}`}
+																/>
+															}
+															onClick={(e) => e.stopPropagation()}>
+															<MoreHorizontal className="size-4" />
+														</DropdownMenuTrigger>
+														<DropdownMenuContent side="bottom" align="end">
+															<DropdownMenuItem
+																onClick={(e) => {
+																	e.stopPropagation();
+																	openEdit(subject);
+																}}>
+																<Edit className="size-4" />
+																Edit
+															</DropdownMenuItem>
+															<DropdownMenuItem
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setArchiving(subject);
+																}}>
+																<Archive className="size-4" />
+																Archive
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setDeleting(subject);
+																}}>
+																<Trash2 className="size-4" />
+																Delete
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</CardAction>
+											</CardHeader>
+
+											<CardContent className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+												{(() => {
+													const elements: React.ReactNode[] = [
+														<span
+															key="details"
+															className="inline-flex items-center gap-1.5">
+															<Folder
+																className="size-3.5 text-secondary"
+																aria-hidden="true"
 															/>
-														}
-														onClick={(e) => e.stopPropagation()}>
-														<MoreHorizontal className="size-4" />
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="bottom" align="end">
-														<DropdownMenuItem
-															onClick={(e) => {
-																e.stopPropagation();
-																openEdit(subject);
-															}}>
-															<Edit className="size-4" />
-															Edit
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={(e) => {
-																e.stopPropagation();
-																setArchiving(subject);
-															}}>
-															<Archive className="size-4" />
-															Archive
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															variant="destructive"
-															onClick={(e) => {
-																e.stopPropagation();
-																setDeleting(subject);
-															}}>
-															<Trash2 className="size-4" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</CardAction>
-										</CardHeader>
-										<CardContent className="text-sm text-muted-foreground">
-											{subject.course} {subject.year_level} • {subject.semester}{" "}
-											({subject.academic_year})
-										</CardContent>
-									</Card>
-								))}
-								{activeSubjects.length === 0 && (
-									<p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-										No active subjects in your library.
-									</p>
-								)}
-							</div>
+															Details
+														</span>,
+														subject.semester ? (
+															<span key="sem">{subject.semester} Semester</span>
+														) : null,
+														subject.academic_year ? (
+															<span key="ay">{subject.academic_year}</span>
+														) : null,
+													].filter(Boolean);
+													return elements.flatMap((el, i) => [
+														el,
+														i < elements.length - 1 ? (
+															<span
+																key={`sep-${i}`}
+																className="text-muted-foreground/50"
+																aria-hidden="true">
+																|
+															</span>
+														) : null,
+													]);
+												})()}
+											</CardContent>
+										</Card>
+									))}
+								</div>
+							)}
 						</div>
 					)}
 
 					{activeTab === "archives" && (
 						<div className="flex flex-col gap-4">
-							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-								{archivedSubjects.map((subject) => (
-									<Card
-										key={subject.subject_id}
-										className="border-2 py-3 border-muted">
-										<CardHeader>
-											<CardTitle>{subject.subject_name}</CardTitle>
-											<Badge variant="outline">{subject.subject_code}</Badge>
-										</CardHeader>
-										<CardContent className="flex flex-col gap-3">
-											<p className="text-xs text-muted-foreground">
-												Archived on{" "}
-												{new Date(subject.updated_at).toLocaleDateString()}
-											</p>
-											<div className="flex items-center gap-2">
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() =>
-														void handleRestore(
-															subject.subject_id,
-															subject.subject_name,
-														)
-													}
-													className="flex-1">
-													<RefreshCw className="size-3.5" />
-													Restore
-												</Button>
-												<Button
-													size="sm"
-													variant="destructive"
-													onClick={() => setDeleting(subject)}
-													className="flex-1">
-													<Trash2 className="size-3.5" />
-													Delete Forever
-												</Button>
-											</div>
-										</CardContent>
-									</Card>
-								))}
-								{archivedSubjects.length === 0 && (
-									<p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-										No archived subjects or trash items found.
-									</p>
-								)}
-							</div>
+							{archivedSubjects.length === 0 ? (
+								<Empty>
+									<EmptyHeader>
+										<EmptyMedia variant="icon">
+											<Archive className="size-5" />
+										</EmptyMedia>
+										<EmptyTitle>No archived subjects</EmptyTitle>
+										<EmptyDescription>
+											No subjects have been archived yet. Archiving moves a
+											subject to this section for later restoration.
+										</EmptyDescription>
+									</EmptyHeader>
+								</Empty>
+							) : (
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+									{archivedSubjects.map((subject) => (
+										<Card
+											key={subject.subject_id}
+											className="border-2 py-3 gap-3 border-muted">
+											<CardHeader>
+												<CardTitle className="min-w-0 truncate">
+													{subject.subject_name}
+												</CardTitle>
+												<Badge variant="outline">{subject.subject_code}</Badge>
+											</CardHeader>
+											<CardContent className="flex flex-col gap-3">
+												{/* ✅ Removed updated_at – just show "Archived" */}
+												<p className="text-xs text-muted-foreground">
+													Archived
+												</p>
+												<div className="flex items-center gap-2">
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															void handleRestore(
+																subject.subject_id,
+																subject.subject_name,
+															)
+														}
+														className="flex-1">
+														<RefreshCw className="size-3.5" />
+														Restore
+													</Button>
+													<Button
+														size="sm"
+														variant="destructive"
+														onClick={() => setDeleting(subject)}
+														className="flex-1">
+														<Trash2 className="size-3.5" />
+														Delete Forever
+													</Button>
+												</div>
+											</CardContent>
+										</Card>
+									))}
+								</div>
+							)}
 						</div>
 					)}
 
 					{activeTab === "scanned-results" && (
 						<div className="rounded-xl border border-border p-8 text-center bg-card">
-							<FileSpreadsheet className="mx-auto size-12 text-muted-foreground mb-3" />
+							<Table className="mx-auto size-12 text-muted-foreground mb-3" />
 							<h3 className="text-lg font-semibold text-foreground">
 								Scanned Exam Results
 							</h3>
@@ -418,9 +524,7 @@ export default function Library() {
 							</p>
 							<Button
 								variant="secondary"
-								onClick={() =>
-									(window.location.href = "/dashboard/sheet-scanning")
-								}>
+								onClick={() => navigate("/dashboard/sheet-scanning")}>
 								Go to Sheet Scanning
 							</Button>
 						</div>
@@ -428,7 +532,7 @@ export default function Library() {
 
 					{activeTab === "item-analysis" && (
 						<div className="rounded-xl border border-border p-8 text-center bg-card">
-							<BarChart3 className="mx-auto size-12 text-muted-foreground mb-3" />
+							<BarChart2 className="mx-auto size-12 text-muted-foreground mb-3" />
 							<h3 className="text-lg font-semibold text-foreground">
 								Psychometric Item Analysis
 							</h3>
@@ -438,7 +542,7 @@ export default function Library() {
 							</p>
 							<Button
 								variant="secondary"
-								onClick={() => (window.location.href = "/dashboard/analysis")}>
+								onClick={() => navigate("/dashboard/analysis")}>
 								Go to Item Analysis
 							</Button>
 						</div>
@@ -446,7 +550,16 @@ export default function Library() {
 				</>
 			)}
 
-			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+			<Dialog
+				open={dialogOpen}
+				onOpenChange={(open) => {
+					setDialogOpen(open);
+					if (!open) {
+						setForm(EMPTY_FORM);
+						setError("");
+						setEditing(null);
+					}
+				}}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Edit Subject</DialogTitle>
@@ -491,21 +604,14 @@ export default function Library() {
 								</FieldContent>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`${baseId}-year-level`}>
-									Year level
-								</FieldLabel>
+								<FieldLabel htmlFor={`${baseId}-section`}>Section</FieldLabel>
 								<FieldContent>
-									<select
-										id={`${baseId}-year-level`}
-										value={form.year_level}
-										onChange={(e) => setField("year_level", e.target.value)}
-										className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]">
-										{YEAR_LEVELS.map((level) => (
-											<option key={level} value={level}>
-												{level}
-											</option>
-										))}
-									</select>
+									<Input
+										id={`${baseId}-section`}
+										value={form.section}
+										onChange={(e) => setField("section", e.target.value)}
+										placeholder="e.g. 3A"
+									/>
 								</FieldContent>
 							</Field>
 							<Field>
