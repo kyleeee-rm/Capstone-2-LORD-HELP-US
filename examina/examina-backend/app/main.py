@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.exceptions import AppError, app_error_handler
-from app.routers import auth, subject, subject_folder, materials
+from app.routers import auth, subject, subject_folder, materials, question_bank
 
 app = FastAPI(title="Examina API")
 
@@ -11,6 +11,7 @@ app.include_router(auth.router)
 app.include_router(subject.router)
 app.include_router(subject_folder.router)
 app.include_router(materials.router)
+app.include_router(question_bank.router)
 
 # Dev-only wide-open CORS. Tighten this before Month 4 deployment.
 app.add_middleware(
