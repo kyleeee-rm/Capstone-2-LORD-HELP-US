@@ -57,20 +57,20 @@ export default function Register() {
 
 	return (
 		<div className="flex min-h-screen flex-col bg-background">
-			<div className="flex items-center gap-3 border-b border-border px-4 py-3">
+			<div className="flex items-center gap-1 border-b border-border px-2 py-2">
 				<Button
 					variant="ghost"
 					size="icon-sm"
 					render={<Link to="/" />}
 					nativeButton={false}
 					aria-label="Back to home">
-					<ArrowLeft className="size-5" />
+					<ArrowLeft className="size-4" />
 				</Button>
-				<h1 className="text-lg font-bold text-foreground" id="register-title">
+				<h1 className="text-base font-bold text-foreground" id="register-title">
 					Sign up
 				</h1>
 			</div>
-			<div className="flex flex-1 flex-col justify-center px-6 py-8 sm:py-12">
+			<div className="flex flex-1 flex-col justify-top px-2 py-2">
 				<div className="mx-auto w-full max-w-sm">
 					<div className="mb-2 text-center">
 						<p className="text-sm text-muted-foreground">
@@ -79,7 +79,7 @@ export default function Register() {
 								variant="link"
 								render={<Link to="/login" />}
 								nativeButton={false}
-								className="p-0">
+								className="p-0 text-sm">
 								Sign in
 							</Button>
 						</p>
@@ -95,7 +95,7 @@ export default function Register() {
 						id={formId}
 						onSubmit={handleSubmit}
 						noValidate
-						className="flex flex-col gap-3.5"
+						className="flex flex-col gap-1"
 						aria-labelledby="register-title">
 						<div aria-live="polite">
 							{errors.field && (
@@ -158,9 +158,9 @@ export default function Register() {
 													/>
 												}>
 												{showPassword ? (
-													<EyeOff className="size-5" />
+													<EyeOff className="size-4" />
 												) : (
-													<Eye className="size-5" />
+													<Eye className="size-4" />
 												)}
 											</TooltipTrigger>
 											<TooltipContent>
@@ -178,7 +178,7 @@ export default function Register() {
 									<Button
 										type="submit"
 										size="lg"
-										className="mt-2 w-full"
+										className="mt-4 w-full"
 										disabled={loading}
 										aria-busy={loading || undefined}
 										aria-label={loading ? "Creating account" : undefined}
@@ -191,13 +191,15 @@ export default function Register() {
 								<AlertDialogHeader>
 									<AlertDialogTitle>Create your account?</AlertDialogTitle>
 									<AlertDialogDescription>
-										By creating an account, you agree to our Terms of Service and
-										Privacy Policy.
+										By creating an account, you agree to our Terms of Service
+										and Privacy Policy.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
 									<AlertDialogCancel>Cancel</AlertDialogCancel>
-									<AlertDialogAction onClick={() => void submit()}>Continue</AlertDialogAction>
+									<AlertDialogAction onClick={() => void submit()}>
+										Continue
+									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>

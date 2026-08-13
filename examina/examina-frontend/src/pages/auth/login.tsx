@@ -58,25 +58,28 @@ export default function Login() {
 
 	return (
 		<div className="flex min-h-screen flex-col bg-background">
-			<div className="flex items-center gap-3 border-b border-border px-4 py-3">
+			<div className="flex items-center gap-1 border-b border-border px-2 py-2">
 				<Button
 					variant="ghost"
 					size="icon-sm"
 					onClick={goToHome}
 					aria-label="Back to home">
-					<ArrowLeft className="size-5" />
+					<ArrowLeft className="size-4" />
 				</Button>
-				<h1 className="text-lg font-bold text-foreground" id="login-title">
+				<h1 className="text-base font-bold text-foreground" id="login-title">
 					Sign in
 				</h1>
 			</div>
 
-			<div className="flex flex-1 flex-col justify-center px-6 py-8 sm:py-12">
+			<div className="flex flex-1 flex-col justify-top px-2 py-2">
 				<div className="mx-auto w-full max-w-sm">
 					<div className="mb-2 text-center">
 						<p className="text-sm text-muted-foreground">
 							New to Examina?{" "}
-							<Button variant="link" className="p-0" onClick={goToRegister}>
+							<Button
+								variant="link"
+								className="p-0 text-sm"
+								onClick={goToRegister}>
 								Sign up
 							</Button>
 						</p>
@@ -93,7 +96,7 @@ export default function Login() {
 					<form
 						onSubmit={handleSubmit}
 						noValidate
-						className="flex flex-col gap-3.5"
+						className="flex flex-col gap-1"
 						aria-labelledby="login-title">
 						<div aria-live="polite">
 							{errors.field && (
@@ -139,9 +142,9 @@ export default function Login() {
 													/>
 												}>
 												{showPassword ? (
-													<EyeOff className="size-5" />
+													<EyeOff className="size-4" />
 												) : (
-													<Eye className="size-5" />
+													<Eye className="size-4" />
 												)}
 											</TooltipTrigger>
 											<TooltipContent>
@@ -158,7 +161,7 @@ export default function Login() {
 								render={
 									<Button
 										variant="link"
-										className="self-start p-0"
+										className="self-start p-0 text-sm"
 										type="button"
 									/>
 								}>

@@ -36,11 +36,13 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
   /* ── Font Size ── */
-  --text-xs: 0.875rem;
-  --text-sm: 1rem;
-  --text-base: 1.125rem;
-  --text-lg: 1.25rem;
-  --text-2xl: 1.875rem;
+  --text-sm: clamp(0.8rem, 0.07vi + 0.79rem, 0.84rem);
+  --text-base: clamp(1rem, 0.21vi + 0.96rem, 1.13rem);
+  --text-md: clamp(1.25rem, 0.42vi + 1.17rem, 1.5rem);
+  --text-lg: clamp(1.56rem, 0.73vi + 1.42rem, 2rem);
+  --text-xl: clamp(1.95rem, 1.19vi + 1.72rem, 2.66rem);
+  --text-xxl: clamp(2.44rem, 1.85vi + 2.07rem, 3.55rem);
+  --text-xxxl: clamp(3.05rem, 2.81vi + 2.49rem, 4.73rem);
 
   /* ── Border Radius ── */
   --radius: 0.5rem;
