@@ -94,7 +94,7 @@ export default function DashboardHeader() {
 								size="icon"
 								onClick={() => updateQuery("")}
 								aria-label="Clear">
-								<X className="size-5" />
+								<X className="size-6" />
 							</Button>
 						)}
 					</div>
@@ -121,7 +121,7 @@ export default function DashboardHeader() {
 							size="icon"
 							aria-label="Notification settings"
 							onClick={() => setSettingsOpen(true)}>
-							<Settings className="size-5" />
+							<Settings className="size-6" />
 						</Button>
 					</div>
 				</header>
@@ -136,11 +136,11 @@ export default function DashboardHeader() {
 	return (
 		<>
 			<header className="fixed top-0 left-0 right-0 z-40 bg-background border-b border-border">
-				<div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+				<div className="flex items-center justify-between h-16 px-2">
 					{isRoot ? (
 						<Link to="/dashboard/search">
 							<Button variant="ghost" size="icon" aria-label="Search">
-								<Search className="size-6" />
+								<Search className="size-5" />
 							</Button>
 						</Link>
 					) : (

@@ -11,7 +11,7 @@ export default function Welcome() {
 			</AspectRatio>
 
 			<div className="flex flex-col items-center gap-1 text-center">
-				<h1 className="font-bold text-2xl">Welcome to Examina</h1>
+				<h1 className="font-bold text-xl">Welcome to Examina</h1>
 
 				<p className="text-muted-foreground text-base max-w-sm">
 					Create an account to start making your assessment workflow simpler.

@@ -41,8 +41,8 @@
   --text-md: clamp(1.25rem, 0.42vi + 1.17rem, 1.5rem);
   --text-lg: clamp(1.56rem, 0.73vi + 1.42rem, 2rem);
   --text-xl: clamp(1.95rem, 1.19vi + 1.72rem, 2.66rem);
-  --text-xxl: clamp(2.44rem, 1.85vi + 2.07rem, 3.55rem);
-  --text-xxxl: clamp(3.05rem, 2.81vi + 2.49rem, 4.73rem);
+  --text-2xl: clamp(2.44rem, 1.85vi + 2.07rem, 3.55rem);
+  --text-3xl: clamp(3.05rem, 2.81vi + 2.49rem, 4.73rem);
 
   /* ── Border Radius ── */
   --radius: 0.5rem;
