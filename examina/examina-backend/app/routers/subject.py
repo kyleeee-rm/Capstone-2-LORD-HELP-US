@@ -15,8 +15,7 @@ from app.schemas.subject import (
     SubjectResponse,
     SubjectUpdate,
 )
-from app.services.ai_provider import embed_text
-from app.services.ai_provider.config import settings as ai_settings
+from app.services.ai_provider import embed_text, get_embedding_metadata
 from app.services.chroma import get_subject_collection
 from app.services.subject_service import SubjectService
 
@@ -109,12 +108,12 @@ def retrieve_chunks(
 
     query_vector = embed_text(query)
 
+    embedding_meta = get_embedding_metadata()
     collection = get_subject_collection(
         subject_id=str(subject_id),
-        embedding_model=ai_settings.EMBEDDING_MODEL,
-        embedding_dimension=ai_settings.EMBEDDING_DIMENSION,
+        embedding_model=embedding_meta["embedding_model"],
+        embedding_dimension=embedding_meta["embedding_dimension"],
     )
-
     chroma_results = collection.query(
         query_embeddings=[query_vector],
         n_results=top_k,

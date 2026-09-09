@@ -5,7 +5,7 @@ from app.models.learning_material import LearningMaterial
 from app.models.material_chunk import MaterialChunk
 from app.models.subject_folder import SubjectFolder
 from app.services import storage
-from app.services.ai_provider.config import settings as ai_settings
+from app.services.ai_provider import get_embedding_metadata
 from app.services.chroma import get_subject_collection
 
 
@@ -35,10 +35,11 @@ class MaterialService:
         ]
 
         if chroma_ids:
+            embedding_meta = get_embedding_metadata()
             collection = get_subject_collection(
                 subject_id=str(folder.subject_id),
-                embedding_model=ai_settings.EMBEDDING_MODEL,
-                embedding_dimension=ai_settings.EMBEDDING_DIMENSION,
+                embedding_model=embedding_meta["embedding_model"],
+                embedding_dimension=embedding_meta["embedding_dimension"],
             )
 
             collection.delete(

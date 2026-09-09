@@ -8,8 +8,7 @@ from app.models.learning_material import LearningMaterial
 from app.models.material_chunk import MaterialChunk
 from app.models.subject_folder import SubjectFolder
 from app.services import storage
-from app.services.ai_provider import embed_batch
-from app.services.ai_provider.config import settings as ai_settings
+from app.services.ai_provider import embed_batch, get_embedding_metadata
 from app.services.chroma import get_subject_collection
 from docx import Document as DocxDocument
 from docx.oxml.ns import qn
@@ -171,10 +170,11 @@ def process_material(material_id) -> None:
             vectors = embed_batch(texts)
 
             # --- Store in ChromaDB ---
+            embedding_meta = get_embedding_metadata()
             collection = get_subject_collection(
                 subject_id=subject_id,
-                embedding_model=ai_settings.EMBEDDING_MODEL,
-                embedding_dimension=ai_settings.EMBEDDING_DIMENSION,
+                embedding_model=embedding_meta["embedding_model"],
+                embedding_dimension=embedding_meta["embedding_dimension"],
             )
 
             chroma_ids = [f"{material.material_id}_{i}" for i in range(len(chunk_records))]
@@ -204,8 +204,8 @@ def process_material(material_id) -> None:
                         page_number=c["page_number"],
                         locator_type=locator_type,
                         chroma_vector_id=chroma_ids[i],
-                        embedding_model=ai_settings.EMBEDDING_MODEL,
-                        embedding_dimension=ai_settings.EMBEDDING_DIMENSION,
+                        embedding_model=embedding_meta["embedding_model"],
+                        embedding_dimension=embedding_meta["embedding_dimension"],
                     )
                 )
 

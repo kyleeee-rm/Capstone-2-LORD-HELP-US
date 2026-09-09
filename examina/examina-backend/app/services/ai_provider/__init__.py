@@ -46,6 +46,15 @@ def embed_text(text: str) -> list[float]:
 def embed_batch(texts: list[str]) -> list[list[float]]:
     return _embedding_provider.embed_batch(texts)
 
+def get_embedding_metadata() -> dict[str, str | int]:
+    """Returns the active embedding model name + dimension, for callers
+    that need to tag data with it (e.g. ChromaDB collection metadata).
+    This is the ONLY sanctioned way for code outside ai_provider/ to learn
+    this info — never import ai_provider.config directly."""
+    return {
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "embedding_dimension": settings.EMBEDDING_DIMENSION,
+    }
 
 def generate_questions(*args, **kwargs):
     return _generation_provider.generate_questions(*args, **kwargs)
