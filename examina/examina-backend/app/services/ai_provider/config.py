@@ -13,8 +13,10 @@ class AIProviderSettings(BaseSettings):
     EMBEDDING_DIMENSION: int = 384
 
     GENERATION_PROVIDER: str = "groq"
-    GENERATION_MODEL: str = "llama-3.3-70b-versatile"
-
+    GENERATION_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_API_KEY: str = ""  # required at runtime once GroqProvider.generate_questions() is implemented; no default value baked in, deliberately blank so a missing key fails loudly rather than silently
+    REASONING_EFFORT: str = "low"  # gpt-oss-120b/20b specific; ignored by non-reasoning models
+    
     TEMPERATURE: float = 0.2
     JSON_MODE: bool = True
 

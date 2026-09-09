@@ -56,8 +56,17 @@ def get_embedding_metadata() -> dict[str, str | int]:
         "embedding_dimension": settings.EMBEDDING_DIMENSION,
     }
 
-def generate_questions(*args, **kwargs):
-    return _generation_provider.generate_questions(*args, **kwargs)
+def generate_questions(prompt: str, num_questions: int) -> list[dict]:
+    """Guarantees the caller never receives more than num_questions items,
+    regardless of provider behavior. Per Week 1 spike findings
+    (week1_spike_findings.md, Section 8): prompt wording alone proved
+    unreliable for exact count control (returned 19-22 for a requested 20)
+    even with explicit stop-condition phrasing. This slice is the
+    provider-agnostic safety net — every provider implementation still
+    needs its own best-effort prompt/parsing logic, but this is the one
+    place the guarantee is actually enforced."""
+    questions = _generation_provider.generate_questions(prompt, num_questions)
+    return questions[:num_questions]
 
 
 def classify_bloom_level(*args, **kwargs):
